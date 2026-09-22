@@ -383,10 +383,15 @@ async function runSearch(fromQuick=false){
         const data=await osmBest(tags,b);
         let arr=parse(data,city,tags);
         if(only)arr=arr.filter(x=>!leads.some(l=>sameLead(l,x)));
-        // No Nacional, limita a contribuição de cada cidade para obrigar a busca a avançar.
+        // No Nacional, cada cidade contribui com uma quantidade pequena e aleatória
+        // para espalhar os resultados entre várias cidades.
         if(national){
-          const quota=Math.max(1,Math.ceil(lim/Math.min(concurrency,4)));
+          arr=arr.sort(()=>Math.random()-0.5);
+          const remaining=Math.max(1,lim-found.length);
+          const quota=Math.min(remaining, Math.floor(Math.random()*3)+1); // 1, 2 ou 3 por cidade
           arr=arr.slice(0,quota);
+        } else {
+          arr=arr.sort(()=>Math.random()-0.5);
         }
         found=uniqueLeads(arr,found).slice(0,lim);
         if(found.length>=lim){
