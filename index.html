@@ -87,19 +87,28 @@ label{display:block;color:#7896a5;font-size:11px;margin:13px 0 7px}input,select{
 const KEY="nexxty_one_v21";
 let leads=load(), last=[];
 const cats={
-"Restaurantes":[["amenity","restaurant"],["amenity","fast_food"],["amenity","food_court"]],
-"Cafés":[["amenity","cafe"]],"Bares":[["amenity","bar"],["amenity","pub"]],
-"Hotéis":[["tourism","hotel"],["tourism","hostel"],["tourism","guest_house"]],
+"Restaurantes":[["amenity","restaurant"],["amenity","fast_food"],["amenity","food_court"],["amenity","cafe"]],
+"Cafés":[["amenity","cafe"],["shop","coffee"]],"Bares":[["amenity","bar"],["amenity","pub"],["amenity","nightclub"]],
+"Hotéis":[["tourism","hotel"],["tourism","hostel"],["tourism","guest_house"],["tourism","motel"]],
 "Lojas":[["shop","*"]],"Barbearias":[["shop","hairdresser"],["shop","beauty"]],
 "Farmácias":[["amenity","pharmacy"]],"Academias":[["leisure","fitness_centre"],["sport","fitness"]],
-"Imobiliárias":[["office","estate_agent"]],"Advogados":[["office","lawyer"]],
-"Fotógrafos":[["craft","photographer"]],"Oficinas":[["shop","car_repair"],["shop","motorcycle"]],
-"Pet shops":[["shop","pet"]],"Dentistas":[["amenity","dentist"],["amenity","doctors"]],
-"Clínicas":[["amenity","clinic"],["amenity","doctors"]],"Salões de beleza":[["shop","beauty"],["shop","hairdresser"]],
-"Padarias":[["shop","bakery"]],"Mercados":[["shop","supermarket"],["shop","convenience"]],
-"Concessionárias":[["shop","car"]],"Escolas":[["amenity","school"],["amenity","college"]],
-"Veterinários":[["amenity","veterinary"]],"Floriculturas":[["shop","florist"]],
-"Lojas de roupas":[["shop","clothes"],["shop","fashion"]],"Móveis":[["shop","furniture"]]
+"Imobiliárias":[["office","estate_agent"]],"Advogados":[["office","lawyer"]],"Contadores":[["office","accountant"]],
+"Fotógrafos":[["craft","photographer"],["shop","photo"]],"Oficinas":[["shop","car_repair"],["shop","motorcycle"],["shop","tyres"]],
+"Pet shops":[["shop","pet"]],"Dentistas":[["amenity","dentist"]],"Clínicas":[["amenity","clinic"],["amenity","doctors"]],
+"Salões de beleza":[["shop","beauty"],["shop","hairdresser"]],"Padarias":[["shop","bakery"]],
+"Mercados":[["shop","supermarket"],["shop","convenience"],["shop","greengrocer"]],"Concessionárias":[["shop","car"]],
+"Escolas":[["amenity","school"],["amenity","college"]],"Veterinários":[["amenity","veterinary"]],"Floriculturas":[["shop","florist"]],
+"Lojas de roupas":[["shop","clothes"],["shop","fashion"]],"Móveis":[["shop","furniture"]],"Eletrônicos":[["shop","electronics"]],
+"Informática":[["shop","computer"],["shop","electronics"]],"Celulares":[["shop","mobile_phone"]],"Autopeças":[["shop","car_parts"]],
+"Materiais de construção":[["shop","doityourself"],["shop","hardware"]],"Óticas":[["shop","optician"]],"Joalherias":[["shop","jewelry"]],
+"Brinquedos":[["shop","toys"]],"Calçados":[["shop","shoes"]],"Papelarias":[["shop","stationery"]],"Livrarias":[["shop","books"]],
+"Lavanderias":[["shop","laundry"]],"Estúdios de tatuagem":[["shop","tattoo"]],"Agências de viagem":[["shop","travel_agency"]],
+"Transportadoras":[["office","logistics"],["office","transport"]],"Segurança":[["office","security"]],"Arquitetos":[["office","architect"]],
+"Engenheiros":[["office","engineer"]],"Consultorias":[["office","consulting"]],"Agências de publicidade":[["office","advertising_agency"]],
+"Gráficas":[["shop","printing"]],"Fotografia e vídeo":[["craft","photographer"]],"Eventos":[["amenity","events_venue"]],
+"Buffets":[["amenity","restaurant"],["amenity","events_venue"]],"Creches":[["amenity","kindergarten"]],"Cursos":[["amenity","school"],["amenity","college"]],
+"Igrejas e templos":[["amenity","place_of_worship"]],"Estacionamentos":[["amenity","parking"]],"Postos de combustível":[["amenity","fuel"]],
+"Motéis":[["tourism","motel"]],"Pousadas":[["tourism","guest_house"]],"Clínicas veterinárias":[["amenity","veterinary"]]
 };
 function load(){try{return JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){return[]}}
 function save(){localStorage.setItem(KEY,JSON.stringify(leads));render()}
@@ -206,17 +215,10 @@ const OVERPASS_URLS=[
   "https://overpass.nchc.org.tw/api/interpreter"
 ];
 async function osm(q){
-  let errors=[];
-  for(const u of OVERPASS_URLS){
-    for(let attempt=0;attempt<2;attempt++){
-      try{
-        const data=await fetchJSON(u,{method:"POST",body:q,headers:{"Content-Type":"text/plain;charset=UTF-8"}},30000);
-        if(data&&Array.isArray(data.elements))return data;
-        throw Error("Resposta inválida");
-      }catch(e){errors.push(`${u.replace(/^https?:\/\//,"").split("/")[0]}: ${e?.message||"erro"}`);if(attempt===0)await sleep(900)}
-    }
-  }
-  throw Error("Todos os servidores de pesquisa falharam. "+errors.slice(-3).join(" • "));
+  const urls=OVERPASS_URLS.slice();
+  const jobs=urls.map(u=>fetchJSON(u,{method:"POST",body:q,headers:{"Content-Type":"text/plain;charset=UTF-8"}},22000)
+    .then(data=>{if(data&&Array.isArray(data.elements))return data;throw Error("Resposta inválida")}));
+  try{return await Promise.any(jobs)}catch(e){throw Error("Fontes de pesquisa indisponíveis")}
 }
 async function osmBest(tags,b){
   // Tenta a caixa da cidade e, se vier pouco, amplia por raio ao redor do centro.
@@ -286,71 +288,61 @@ async function getAllBrazilCities(){
 }
 
 async function runSearch(fromQuick){
-  let cat=document.getElementById(fromQuick?"qcat":"cat").value;
-  let cityInput=document.getElementById(fromQuick?"qcity":"cities");
-  let rawCities=String(cityInput.value||"").trim();
-  let cities=rawCities.split(/[;,\n]+/).map(x=>x.trim()).filter(Boolean);
+  const cat=document.getElementById(fromQuick?"qcat":"cat").value;
+  const cityInput=document.getElementById(fromQuick?"qcity":"cities");
+  const rawCities=String(cityInput.value||"").trim();
+  let cities=rawCities.split(/[;\n]+/).map(x=>x.trim()).filter(Boolean);
   if(!cities.length){
     cities=await getAllBrazilCities();
-    if(!cities.length){toast("Não foi possível carregar a lista de cidades. Tente novamente.");return}
-    if(!fromQuick) toast(`Modo nacional: ${cities.length} cidades carregadas. A busca será feita gradualmente para evitar bloqueios.`);
+    if(!cities.length){toast("Não foi possível carregar as cidades.");return}
   }
-  let lim=Math.max(5,Math.min(100,+document.getElementById(fromQuick?"qlimit":"limit").value||20));
-  let only=document.getElementById(fromQuick?"qnew":"newonly").checked;
-  if(!cities.length){toast("Digite pelo menos uma cidade.");return}
-  if(!fromQuick)document.getElementById("searchstatus").innerHTML='<div class="progress"><i id="bar"></i></div><p class="muted" id="st">Preparando busca robusta...</p><div id="diag" class="muted" style="font-size:12px;margin-top:8px"></div>';
-  let btn=document.getElementById(fromQuick?"qsearch":"searchbtn");btn.disabled=true;btn.textContent="⌛ Pesquisando...";
-  let found=[],okCities=0,errors=[];
-  try{
-    for(let i=0;i<cities.length;i++){
-      const city=cities[i];
+  const lim=Math.max(5,Math.min(100,+document.getElementById(fromQuick?"qlimit":"limit").value||20));
+  const only=document.getElementById(fromQuick?"qnew":"newonly").checked;
+  if(!fromQuick)document.getElementById("searchstatus").innerHTML='<div class="progress"><i id="bar"></i></div><p class="muted" id="st">Procurando WhatsApps...</p><div id="diag" class="muted" style="font-size:12px;margin-top:8px"></div>';
+  const btn=document.getElementById(fromQuick?"qsearch":"searchbtn");btn.disabled=true;btn.textContent="⌛ Procurando...";
+  let found=[],done=0,errors=0,stop=false;
+  const target=lim;
+  const concurrency=fromQuick?10:10;
+  const queue=cities.slice();
+  const seenCities=new Set();
+  const worker=async()=>{
+    while(!stop){
+      const city=queue.shift();
+      if(!city) return;
+      if(seenCities.has(city))continue; seenCities.add(city);
       try{
-        if(!fromQuick){document.getElementById("st").textContent=`Localizando ${city}...`}
         const b=await locate(city);
-        if(!fromQuick)document.getElementById("st").textContent=`Buscando ${cat} em ${city}...`;
         const data=await osmBest(cats[cat],b);
-        let arr=parse(data,city);
-        // Só entram nos resultados candidatos com um número de WhatsApp identificado.
-        arr=arr.filter(x=>!!x.WhatsApp);
+        let arr=parse(data,city).filter(x=>x.WhatsApp);
         if(only)arr=arr.filter(x=>!leads.some(l=>key(l)===key(x)));
-        // Não corta antes da deduplicação global; isso melhora muito o resultado final.
-        found.push(...arr);
-        okCities++;
-        if(!fromQuick){
-          document.getElementById("bar").style.width=((i+1)/cities.length*100)+"%";
-          document.getElementById("diag").textContent=`${okCities}/${cities.length} cidade(s) concluída(s) • ${found.length} resultado(s) bruto(s)`;
-        }
-      }catch(e){
-        errors.push(`${city}: ${e?.message||"erro desconhecido"}`);
-        if(!fromQuick)document.getElementById("diag").textContent=`${okCities}/${cities.length} cidade(s) concluída(s) • ${found.length} resultado(s) • ${errors.length} falha(s)`;
+        found=uniqueLeads(arr,found);
+        if(found.length>=target)stop=true;
+      }catch(e){errors++}
+      done++;
+      if(!fromQuick){
+        const pct=Math.min(100,Math.round(done/Math.max(1,Math.min(cities.length,done+queue.length))*100));
+        document.getElementById("bar").style.width=pct+"%";
+        document.getElementById("st").textContent=stop?`Meta atingida: ${found.length} WhatsApps encontrados.`:`Buscando... ${found.length}/${target} WhatsApps encontrados`;
+        document.getElementById("diag").textContent=`${done} cidade(s) verificadas • ${found.length} resultado(s) com WhatsApp • ${queue.length} restantes`;
       }
-      // Pequena pausa para reduzir bloqueios/rate limit.
-      if(i<cities.length-1)await sleep(450);
     }
-    let map=new Map();found.forEach(x=>{if(!map.has(key(x)))map.set(key(x),x)});
-    last=[...map.values()].slice(0, Math.min(5000, Math.max(lim, lim*cities.length)));
+  };
+  try{
+    await Promise.all(Array.from({length:Math.min(concurrency,cities.length)},worker));
+    last=found.slice(0,target);
     if(!fromQuick){
       document.getElementById("resultbox").style.display="block";
-      document.getElementById("resultinfo").textContent=`${last.length} novo(s) encontrado(s)${errors.length?` • ${errors.length} cidade(s) com falha`:""}`;
+      document.getElementById("resultinfo").textContent=last.length?`${last.length} resultado(s) com WhatsApp encontrado(s). Busca encerrada ao atingir a meta.`:"Nenhum WhatsApp público encontrado nas cidades verificadas.";
       document.getElementById("results").innerHTML=table(last,false);
+      document.getElementById("bar").style.width="100%";
     }
     if(last.length){
-      let autos=fromQuick?true:document.getElementById("autosave").checked;
-      if(autos){last.forEach(x=>{if(!leads.some(l=>key(l)===key(x)))leads.push(x)});save();toast(`${last.length} novos negócios encontrados e salvos!`)}
-      else toast(`${last.length} novos negócios encontrados!`)
-    }else if(errors.length===cities.length){
-      toast("Não foi possível consultar as fontes agora. Tente novamente em alguns segundos.")
-    }else toast("Nenhum negócio novo encontrado nessa busca.")
-    if(!fromQuick&&errors.length){
-      document.getElementById("diag").innerHTML=`<b>${okCities}/${cities.length} cidade(s) consultada(s).</b> Algumas fontes/cidades falharam, mas os resultados disponíveis foram mantidos.<br>${errors.slice(0,3).map(esc).join("<br>")}`
-    }
-  }catch(e){
-    console.error(e);toast("A pesquisa falhou. Tente novamente.");
-    if(!fromQuick)document.getElementById("diag").textContent=e?.message||"Erro de pesquisa";
-  }finally{
-    btn.disabled=false;btn.textContent=fromQuick?"⌕  Iniciar busca":"⌕  Procurar novos negócios";
-    if(!fromQuick){const b=document.getElementById("bar");if(b&&last.length)b.style.width="100%";}
-  }
+      const autos=fromQuick?true:document.getElementById("autosave").checked;
+      if(autos){last.forEach(x=>{if(!leads.some(l=>key(l)===key(x)))leads.push(x)});save();toast(`${last.length} resultados com WhatsApp encontrados e salvos.`)}
+      else toast(`${last.length} resultados com WhatsApp encontrados.`)
+    }else toast("Nenhum WhatsApp público encontrado.");
+  }catch(e){console.error(e);toast("A busca terminou sem resultados disponíveis.");if(!fromQuick)document.getElementById("diag").textContent="A busca não conseguiu obter dados das fontes."}
+  finally{btn.disabled=false;btn.textContent=fromQuick?"⌕  Iniciar busca":"⌕  Procurar novos negócios"}
 }
 function csvEsc(v){return`"${String(v??"").replace(/"/g,'""')}"`}
 function download(name){let cols=["Nome","Cidade","WhatsApp","Status","Fonte"];let txt="\ufeff"+[cols,...leads.map(x=>cols.map(c=>x[c]||""))].map(r=>r.map(csvEsc).join(";")).join("\n");let a=document.createElement("a");a.href=URL.createObjectURL(new Blob([txt],{type:"text/csv;charset=utf-8"}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
