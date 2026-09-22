@@ -249,34 +249,68 @@ async function osm(q){
   }
   throw Error(last||"Fontes indisponíveis");
 }
-async function osmBest(tags,b){
-  let data=await osm(overpassQuery(tags,b));
-  // Se a consulta por categoria trouxer poucos dados, procura também
-  // estabelecimentos com dados de contato na mesma área e deixa o filtro
-  // de categoria para o parse. Isso evita 0 resultados quando o OSM usa
-  // uma etiqueta de categoria diferente da esperada.
-  if((data.elements||[]).length<5){
-    try{
-      const contactTags=[
-        ["contact:whatsapp","*"],["whatsapp","*"],["contact:mobile","*"],
-        ["mobile","*"],["contact:phone","*"],["phone","*"]
-      ];
-      const extra=await osm(overpassQuery(contactTags,b));
-      const merged=new Map();
-      [...(data.elements||[]),...(extra.elements||[])].forEach(el=>merged.set(String(el.type)+":"+el.id,el));
-      data={elements:[...merged.values()]};
-    }catch(e){}
-  }
-  if((data.elements||[]).length<5){
-    try{
-      const extra=await osm(overpassAroundQuery(tags,b.lat,b.lon,18000));
-      const merged=new Map();
-      [...(data.elements||[]),...(extra.elements||[])].forEach(el=>merged.set(String(el.type)+":"+el.id,el));
-      data={elements:[...merged.values()]};
-    }catch(e){}
-  }
-  return data;
+function categoryWords(category){
+  const map={
+    "Restaurantes":["restaurante","restaurant","lanchonete","pizzaria","churrascaria","hamburgueria","comida"],
+    "Cafés":["cafe","cafeteria","coffee"],"Bares":["bar","pub","boteco"],
+    "Hotéis":["hotel","pousada","hostel","hospedagem"],"Lojas":["loja","store","comercio","comércio"],
+    "Barbearias":["barbearia","barber","barbershop","cabeleireiro","barbeiro"],
+    "Farmácias":["farmacia","farmácia","drogaria"],"Academias":["academia","fitness","gym"],
+    "Imobiliárias":["imobiliaria","imobiliária","imoveis","imóveis"],"Advogados":["advogado","advocacia","lawyer"],
+    "Contadores":["contador","contabilidade","contabil"],"Fotógrafos":["fotografo","fotógrafo","fotografia","photo"],
+    "Oficinas":["oficina","auto center","mecanica","mecânica","motos","carros"],"Pet shops":["pet shop","petshop","pet","animal"],
+    "Dentistas":["dentista","odontologia","odontologico","odontológico"],"Clínicas":["clinica","clínica","clinic","medico","médico"],
+    "Salões de beleza":["salao","salão","beleza","beauty","cabeleireiro"],"Padarias":["padaria","panificadora","bakery"],
+    "Mercados":["mercado","supermercado","mercearia","market"],"Concessionárias":["concessionaria","concessionária","veiculos","veículos","carros"],
+    "Escolas":["escola","colegio","colégio","school","ensino"],"Veterinários":["veterinario","veterinária","veterinaria","vet"],
+    "Floriculturas":["floricultura","flores","flower"],"Lojas de roupas":["roupa","moda","vestuario","vestuário","boutique","fashion"],
+    "Móveis":["moveis","móveis","marcenaria","furniture"],"Eletrônicos":["eletronicos","eletrônicos","eletronica","eletrônica"],
+    "Informática":["informatica","informática","computador","computer"],"Celulares":["celular","smartphone","telefone","mobile"],
+    "Autopeças":["autopecas","autopeças","pecas","peças","carro"],"Materiais de construção":["material de construção","construção","ferragem","hardware"],
+    "Óticas":["otica","ótica","oculos","óculos"],"Joalherias":["joalheria","joias","jóias"],"Brinquedos":["brinquedo","toy"],
+    "Calçados":["calcados","calçados","sapato","shoes"],"Papelarias":["papelaria","stationery"],"Livrarias":["livraria","livros","books"],
+    "Lavanderias":["lavanderia","laundry"],"Estúdios de tatuagem":["tatuagem","tattoo"],"Agências de viagem":["agencia de viagem","agência de viagem","turismo","travel"],
+    "Transportadoras":["transportadora","transporte","logistica","logística"],"Segurança":["seguranca","segurança","vigilancia","vigilância"],
+    "Arquitetos":["arquiteto","arquitetura","architect"],"Engenheiros":["engenheiro","engenharia","engineer"],"Consultorias":["consultoria","consulting"],
+    "Agências de publicidade":["publicidade","propaganda","marketing","advertising"],"Gráficas":["grafica","gráfica","impressão","impressao"],
+    "Fotografia e vídeo":["fotografia","fotografo","vídeo","video"],"Eventos":["eventos","event venue","eventos e festas"],"Buffets":["buffet","festas","eventos"],
+    "Creches":["creche","berçario","berçário"],"Cursos":["curso","cursos","escola","ensino"],"Igrejas e templos":["igreja","templo","church"],
+    "Estacionamentos":["estacionamento","parking"],"Postos de combustível":["posto","combustivel","combustível","gasolina"],"Motéis":["motel"],"Pousadas":["pousada","guest house"],"Clínicas veterinárias":["clinica veterinaria","clínica veterinária","veterinario","vet"]
+  };
+  return map[category]||[];
 }
+function overpassNameQuery(words,b){
+  if(!words.length)return null;
+  const rx=words.map(w=>String(w).replace(/[.*+?^${}()|[\\]\\]/g,"\\$&")).join("|");
+  return `[out:json][timeout:20];(nwr["name"~"${rx}",i](${b.south},${b.west},${b.north},${b.east}););out center tags;`;
+}
+function overpassNameAroundQuery(words,lat,lon,radius){
+  if(!words.length)return null;
+  const rx=words.map(w=>String(w).replace(/[.*+?^${}()|[\\]\\]/g,"\\$&")).join("|");
+  return `[out:json][timeout:20];(nwr["name"~"${rx}",i](around:${radius},${lat},${lon}););out center tags;`;
+}
+async function osmBest(tags,b,category){
+  const words=categoryWords(category);
+  const qs=[osm(overpassQuery(tags,b))];
+  const nq=overpassNameQuery(words,b); if(nq)qs.push(osm(nq));
+  const settled=await Promise.allSettled(qs);
+  const merged=new Map();
+  for(const r of settled) if(r.status==="fulfilled") for(const el of (r.value.elements||[])) merged.set(String(el.type)+":"+el.id,el);
+  if(merged.size<8){
+    const extra=[osm(overpassAroundQuery(tags,b.lat,b.lon,15000))];
+    const na=overpassNameAroundQuery(words,b.lat,b.lon,15000); if(na)extra.push(osm(na));
+    const more=await Promise.allSettled(extra);
+    for(const r of more) if(r.status==="fulfilled") for(const el of (r.value.elements||[])) merged.set(String(el.type)+":"+el.id,el);
+  }
+  if(merged.size<8){
+    const extra=[osm(overpassAroundQuery(tags,b.lat,b.lon,25000))];
+    const na=overpassNameAroundQuery(words,b.lat,b.lon,25000); if(na)extra.push(osm(na));
+    const more=await Promise.allSettled(extra);
+    for(const r of more) if(r.status==="fulfilled") for(const el of (r.value.elements||[])) merged.set(String(el.type)+":"+el.id,el);
+  }
+  return {elements:[...merged.values()]};
+}
+
 function matchesCategory(t,tags){
   if(tags[0]&&tags[0][1]==="*") return true;
   return tags.some(([k,v])=>String(t[k]||"")===String(v));
@@ -334,9 +368,19 @@ async function runSearch(fromQuick=false){
   const tags=cats[cat]||cats["Todos os negócios"];
   const rawCities=String(document.getElementById("cities").value||"").trim();
   const region=regionName(document.getElementById("region").value);
+  const national=!rawCities.length;
   let cities=splitCities(rawCities);
   if(!cities.length){
-    cities=await getAllBrazilCities();
+    // Nacional: usa cidades grandes/ativas como o mecanismo que funcionava em BH.
+    // Assim não sorteia municípios pequenos sem dados públicos de WhatsApp.
+    cities=[
+      "São Paulo, SP","Rio de Janeiro, RJ","Belo Horizonte, MG","Brasília, DF",
+      "Salvador, BA","Fortaleza, CE","Recife, PE","Porto Alegre, RS",
+      "Curitiba, PR","Manaus, AM","Belém, PA","Goiânia, GO","Campinas, SP",
+      "Guarulhos, SP","São Luís, MA","Maceió, AL","Natal, RN","Teresina, PI",
+      "Campo Grande, MS","João Pessoa, PB","Florianópolis, SC","Vitória, ES",
+      "São José dos Campos, SP","Ribeirão Preto, SP","Uberlândia, MG","Sorocaba, SP","Poços de Caldas, MG"
+    ];
     if(region){
       const sig=Object.entries(STATE_NAMES).find(([k,v])=>norm(k)===norm(region)||norm(v)===norm(region))?.[0];
       if(sig)cities=cities.filter(c=>c.toUpperCase().endsWith(", "+sig));
@@ -353,11 +397,23 @@ async function runSearch(fromQuick=false){
   btn.disabled=true;btn.textContent="⌛ Procurando...";
   if(stopBtn){stopBtn.style.display="block";stopBtn.disabled=false;}
   let found=[],done=0,errors=0,stop=false;
-  const priority=["São Paulo, SP","Rio de Janeiro, RJ","Belo Horizonte, MG","Brasília, DF","Curitiba, PR","Porto Alegre, RS","Salvador, BA","Fortaleza, CE","Recife, PE","Campinas, SP","Goiânia, GO","Manaus, AM","Belém, PA","Guarulhos, SP","São Luís, MA","Maceió, AL","Natal, RN","Florianópolis, SC","Vitória, ES","Poços de Caldas, MG","Pouso Alegre, MG","Uberlândia, MG","Ribeirão Preto, SP","Sorocaba, SP"];
-  const ordered=[...new Set([...priority.filter(x=>cities.includes(x)),...cities])];
+  // No modo Nacional, uma pesquisa usa UMA cidade por vez.
+  // A próxima pesquisa nacional começa em outra cidade, para variar a origem dos leads.
+  let ordered=[...new Set(cities)];
+  if(national){
+    let used=[];
+    try{used=JSON.parse(localStorage.getItem("nexxty_national_used_cities")||"[]");if(!Array.isArray(used))used=[]}catch(e){used=[]}
+    const unused=ordered.filter(c=>!used.includes(c));
+    // Em cada pesquisa começa por uma cidade diferente; se ela não tiver
+    // leads suficientes, a fila avança somente para completar a meta.
+    const pool=unused.length?unused:ordered;
+    const shuffled=pool.slice().sort(()=>Math.random()-0.5);
+    ordered=shuffled;
+    document.getElementById("st").textContent=`Modo nacional: escolhendo uma cidade...`;
+  }
   const queue=ordered.slice();
-  // Poucas requisições simultâneas é mais rápido na prática porque evita rate-limit/429 dos servidores públicos.
-  const concurrency=3;
+  // Nacional usa uma única cidade por vez; só avança se ela não tiver resultados suficientes.
+  const concurrency=national?1:3;
   if(stopBtn){
     stopBtn.onclick=()=>{
       if(stop)return;
@@ -378,6 +434,22 @@ async function runSearch(fromQuick=false){
         const data=await osmBest(tags,b);
         let arr=parse(data,city,tags);
         if(only)arr=arr.filter(x=>!leads.some(l=>sameLead(l,x)));
+        // No Nacional, todos os resultados desta pesquisa vêm da mesma cidade.
+        // Só passamos para outra cidade se a atual não tiver resultados suficientes.
+        if(national){
+          arr=arr.sort(()=>Math.random()-0.5);
+          const remaining=Math.max(1,lim-found.length);
+          arr=arr.slice(0,remaining);
+          try{
+            const used=JSON.parse(localStorage.getItem("nexxty_national_used_cities")||"[]");
+            if(!used.includes(city)){
+              used.push(city);
+              localStorage.setItem("nexxty_national_used_cities",JSON.stringify(used));
+            }
+          }catch(e){}
+        } else {
+          arr=arr.sort(()=>Math.random()-0.5);
+        }
         found=uniqueLeads(arr,found).slice(0,lim);
         if(found.length>=lim){
           // Entrega imediatamente somente a quantidade pedida.
@@ -400,8 +472,8 @@ async function runSearch(fromQuick=false){
       const checked=done+queue.length;
       const pct=stop?100:Math.min(99,Math.round(done/Math.max(1,checked)*100));
       document.getElementById("bar").style.width=pct+"%";
-      document.getElementById("st").textContent=found.length>=lim?`Meta atingida: ${found.length} WhatsApps.`:`Buscando... ${found.length}/${lim} WhatsApps encontrados`;
-      document.getElementById("diag").textContent=`${done} cidade(s) verificadas • ${found.length} resultado(s) válidos • ${queue.length} na fila${errors?` • ${errors} consultas falharam`:""}`;
+      document.getElementById("st").textContent=found.length>=lim?`Meta atingida: ${found.length} WhatsApps.`:`Buscando em ${city}... ${found.length}/${lim} WhatsApps encontrados`;
+      document.getElementById("diag").textContent=national?`${city} • ${found.length}/${lim} resultados encontrados${errors?` • ${errors} consulta(s) falharam`:""}`:`${done} cidade(s) verificadas • ${found.length} resultado(s) válidos • ${queue.length} na fila${errors?` • ${errors} consultas falharam`:""}`;
     }
   };
   try{
