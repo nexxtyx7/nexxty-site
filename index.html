@@ -337,7 +337,7 @@ async function runSearch(fromQuick=false){
         const data=await osmBest(tags,b);
         let arr=parse(data,city,tags);
         if(only)arr=arr.filter(x=>!leads.some(l=>sameLead(l,x)));
-        found=uniqueLeads(arr,found);
+        found=uniqueLeads(arr,found).slice(0,lim);
         if(found.length>=lim){
           // Entrega imediatamente somente a quantidade pedida.
           found=found.slice(0,lim);
@@ -375,7 +375,7 @@ async function runSearch(fromQuick=false){
       if(autos){last.forEach(x=>{if(!leads.some(l=>sameLead(l,x)))leads.push(x)});save();toast(`${last.length} resultados encontrados e salvos.`)}
       else toast(`${last.length} resultados encontrados.`)
     }else toast("Nenhum resultado público encontrado.");
-  }catch(e){console.error(e);toast("Não foi possível consultar as fontes agora.");document.getElementById("diag").textContent="As fontes públicas podem sofrer limite ou indisponibilidade temporária. Tente novamente."}
+  }catch(e){console.error(e); if(!last.length && !found.length){toast("Não foi possível consultar as fontes agora.");document.getElementById("diag").textContent="As fontes públicas podem sofrer limite ou indisponibilidade temporária. Tente novamente."}}
   finally{btn.disabled=false;btn.textContent="⌕  Procurar negócios"}
 }
 function csvEsc(v){return`"${String(v??"").replace(/"/g,'""')}"`}
