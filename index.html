@@ -228,7 +228,7 @@ const OVERPASS_URLS=[
   "https://overpass.nchc.org.tw/api/interpreter"
 ];
 async function osm(q){
-  const ask=u=>fetchJSON(u,{method:"POST",body:q,headers:{"Content-Type":"text/plain;charset=UTF-8"}},6500)
+  const ask=u=>fetchJSON(u,{method:"POST",body:q,headers:{"Content-Type":"text/plain;charset=UTF-8"}},8500)
     .then(data=>{if(data&&Array.isArray(data.elements))return data;throw Error("Resposta inválida")});
   // Corre os servidores em paralelo e usa o primeiro resultado válido.
   // Isso evita esperar vários servidores lentos em sequência.
@@ -257,16 +257,14 @@ async function osmBrazilBest(tags,category){
   return {elements:[...merged.values()]};
 }
 function overpassStateQuery(tags,uf){
-  const state=STATE_NAMES[uf]||uf;
   const parts=tags.map(t=>t[1]==="*"
     ? `nwr["${t[0]}"](area.searchArea);`
     : `nwr["${t[0]}"="${t[1]}"](area.searchArea);`);
-  return `[out:json][timeout:22];(area["ISO3166-2"="BR-${uf}"][boundary="administrative"][admin_level=4]->.searchArea;area["name"="${state}"][boundary="administrative"][admin_level=4]->.searchArea;);(${parts.join("")});out center tags;`;
+  return `[out:json][timeout:18];area["ISO3166-2"="BR-${uf}"][boundary="administrative"][admin_level=4]->.searchArea;(${parts.join("")});out center tags;`;
 }
 function overpassStateNameQuery(words,uf){
-  const state=STATE_NAMES[uf]||uf;
   const rx=words.map(w=>String(w).replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join("|");
-  return `[out:json][timeout:22];(area["ISO3166-2"="BR-${uf}"][boundary="administrative"][admin_level=4]->.searchArea;area["name"="${state}"][boundary="administrative"][admin_level=4]->.searchArea;);(nwr["name"~"${rx}",i](area.searchArea););out center tags;`;
+  return `[out:json][timeout:18];area["ISO3166-2"="BR-${uf}"][boundary="administrative"][admin_level=4]->.searchArea;(nwr["name"~"${rx}",i](area.searchArea););out center tags;`;
 }
 async function osmStateBest(tags,uf,category){
   const words=CATEGORY_NAME_WORDS[category]||[];
@@ -424,9 +422,9 @@ async function runSearch(fromQuick){
   let cities=rawCities.split(/[;\n]+/).map(x=>x.trim()).filter(Boolean);
   const national=!cities.length;
   if(national){
-    // Nacional consulta o Brasil inteiro diretamente. Não percorremos 5.570
-    // municípios nem dependemos de 27 áreas estaduais para devolver os primeiros leads.
-    cities=["__BRASIL__"];
+    // Nacional usa as 27 UFs como blocos de busca. Isso evita a consulta gigantesca
+    // do Brasil inteiro, mas também evita percorrer milhares de municípios.
+    cities=BRAZIL_STATES.slice();
   }
   const lim=Math.max(5,Math.min(100,+document.getElementById("limit").value||20));
   const only=document.getElementById("newonly").checked;
@@ -436,17 +434,17 @@ async function runSearch(fromQuick){
   const targetReached=()=>found.length>=lim;
   // 6 workers na busca nacional; 4 para cidade(s) informadas. Paramos assim
   // que a quantidade pedida for atingida, sem esperar o restante do Brasil.
-  const workers=national?1:Math.min(6,cities.length);
+  const workers=national?Math.min(8,cities.length):Math.min(6,cities.length);
   const worker=async()=>{
     while(!stop){
       const i=next++;if(i>=cities.length||stop)return;
       const city=cities[i];
       try{
-        document.getElementById("st").textContent=`Buscando ${cat} em ${national?(STATE_NAMES[city.replace("__UF__","")]||city):city}...`;
+        document.getElementById("st").textContent=`Buscando ${cat} em ${national?(STATE_NAMES[city]||city):city}...`;
         let arr=[];
         if(national){
-          const data=await osmBrazilBest(cats[cat],cat);
-          arr=parse(data,"Brasil");
+          const data=await osmStateBest(cats[cat],city,cat);
+          arr=parse(data,STATE_NAMES[city]||city);
         }else{
           const b=await locate(city);
           const data=await osmBest(cats[cat],b,cat);
