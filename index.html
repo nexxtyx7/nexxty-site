@@ -1,147 +1,180 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#061321">
-  <title>NEXXTY ONE • Lead Intelligence</title>
-  <meta name="description" content="NEXXTY ONE — prospecção profissional de negócios.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#061321">
+<title>NEXXTY ONE</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Inter,Arial,sans-serif;background:#03101d;color:#eaf7ff}
+body{background:radial-gradient(circle at 75% -10%,#0b3850 0,#061827 32%,#020d18 70%);font-size:14px}
+button,input,select{font:inherit}.app{display:flex;min-height:100vh}.side{width:275px;flex:0 0 275px;background:#03111e;border-right:1px solid #12384d;padding:24px 17px;display:flex;flex-direction:column}
+.brand{display:flex;gap:11px;align-items:center;padding:5px 8px 25px}.logo{width:43px;height:43px;border-radius:13px;display:grid;place-items:center;background:#083d52;color:#58edf0;font-size:28px}.brand b{font-size:19px;letter-spacing:1px}.brand b span{color:#4de8e6}.brand small{display:block;color:#617d8d;font-size:8px;letter-spacing:1.5px;margin-top:4px}
+.nav{display:grid;gap:5px}.nav button{height:49px;border:0;border-radius:10px;background:transparent;color:#a9c0ce;text-align:left;padding:0 14px;cursor:pointer}.nav button span{font-size:21px;display:inline-block;width:31px;vertical-align:middle}.nav button.active,.nav button:hover{background:#0a4c63;color:#fff;box-shadow:inset 3px 0 #4de8e6}
+.sidebottom{margin-top:auto}.promo{border:1px solid #11506a;border-radius:14px;padding:18px;background:#051d2f}.promo .big{font-size:29px;color:#4de8e6}.promo h3{font-size:14px;line-height:1.45}.promo p{color:#718b99;font-size:11px;line-height:1.6}.version{text-align:center;color:#506a79;font-size:10px;margin-top:15px}
+.main{flex:1;min-width:0}.top{height:78px;border-bottom:1px solid #12384d;background:#041423dd;display:flex;align-items:center;gap:20px;padding:0 27px;position:sticky;top:0;z-index:20}.mobilebrand{display:none;font-weight:900}.searchtop{height:44px;max-width:760px;flex:1;border:1px solid #164961;background:#051a2a;border-radius:28px;display:flex;align-items:center;padding:0 15px}.searchtop span{font-size:23px;color:#72a2b5;margin-right:8px}.searchtop input{width:100%;border:0;outline:0;background:none;color:#eaf7ff}.searchtop input::placeholder{color:#577687}.topright{margin-left:auto;display:flex;gap:14px;align-items:center;color:#6e8998}.avatar{width:35px;height:35px;border-radius:50%;display:grid;place-items:center;background:#d9f3ff;color:#082337;font-weight:900}
+.page{display:none;max-width:1550px;margin:auto;padding:35px 27px 65px}.page.active{display:block}.eyebrow{font-size:10px;letter-spacing:2.4px;color:#3ee3e1;font-weight:800;margin-bottom:8px}.hero,.title{display:flex;justify-content:space-between;align-items:end;gap:20px;margin-bottom:25px}.hero h1,.title h1{font-size:34px;margin:0 0 8px;letter-spacing:-1px}.hero h1 span{color:#4de8e6}.hero p,.title p{color:#7895a5;margin:0;line-height:1.6}.primary,.secondary,.danger{border-radius:9px;min-height:44px;padding:0 18px;border:0;cursor:pointer;font-weight:800;font-size:12px}.primary{background:linear-gradient(100deg,#4de8e6,#72e9df);color:#03202a}.secondary{background:#082238;color:#a9d8e4;border:1px solid #164a61}.danger{background:#3a151b;color:#ff9da6;border:1px solid #75323d}.primary:disabled{opacity:.55;cursor:wait}
+.metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:13px;margin-bottom:20px}.metric,.panel{background:linear-gradient(145deg,#061b2d,#031421);border:1px solid #123f56;border-radius:15px}.metric{padding:17px}.metric span{color:#91acba;font-size:11px}.metric strong{display:block;font-size:29px;margin:10px 0 3px}.metric small{color:#526e7e;font-size:9px}.mi{float:right;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-size:19px}.cyan{background:#064a60;color:#57edf0}.green{background:#084c39;color:#52e9a9}.blue{background:#0b3d75;color:#6bb8ff}.gold{background:#4a3a08;color:#ffd45e}.purple{background:#30235e;color:#b899ff}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:17px}.panel{padding:19px}.head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:15px}.panel h2{font-size:16px;margin:0 0 5px}.panel p{font-size:11px;color:#607f90;margin:0;line-height:1.6}.link{border:0;background:none;color:#45e4e2;font-weight:800;cursor:pointer}.stack{display:flex;flex-direction:column;gap:14px}
+label{display:block;color:#7896a5;font-size:11px;margin:13px 0 7px}input,select{height:43px;width:100%;border:1px solid #16455d;border-radius:9px;background:#041725;color:#dceff6;padding:0 11px;outline:0}input:focus,select:focus{border-color:#2ad9d7}.full{width:100%;margin-top:16px}.check{display:flex;gap:8px;align-items:center;margin:11px 0 0!important}.check input{width:auto;height:auto}.check span{color:#7993a0;font-size:10px}.actions{display:grid;gap:8px;margin-top:12px}.actions button{height:41px;text-align:left;padding:0 12px;border:1px solid #16465d;background:#061b2c;border-radius:9px;color:#a9c4d0;cursor:pointer}.online{display:flex;gap:10px;align-items:center;border:1px solid #125f50;border-radius:12px;padding:15px;background:#06231f}.dot{width:9px;height:9px;border-radius:50%;background:#39e6a1;box-shadow:0 0 13px #39e6a1}.online b{color:#39e6a1;font-size:12px}.online small{display:block;color:#668b88;font-size:9px;margin-top:4px}
+.searchgrid{display:grid;grid-template-columns:1.4fr 1fr;gap:17px}.info{padding:25px}.info .symbol{font-size:35px;color:#4de8e6}.info-row{display:flex;gap:11px;align-items:center;margin-top:17px;color:#8da6b3;font-size:11px}.info-row b{width:27px;height:27px;display:grid;place-items:center;border-radius:8px;background:#0a3348;color:#51e5e3}
+.toolbar{display:flex;gap:10px;margin-bottom:13px}.toolbar input{max-width:520px}.toolbar select{max-width:200px}.tablewrap{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:760px;font-size:11px}.table th{padding:11px;text-align:left;color:#66899a;border-bottom:1px solid #123a50}.table td{padding:11px;border-bottom:1px solid #0c2b3c;color:#b8cbd4}.table tr:hover td{background:#062033}.table a{color:#55e9e5;text-decoration:none}.badge{display:inline-block;padding:5px 8px;border-radius:20px;background:#063b55;color:#61e9ef;font-size:9px;white-space:nowrap}.badge.c{background:#30215a;color:#c3a8ff}.badge.r{background:#074a35;color:#4ce8a1}.badge.ct{background:#51400b;color:#ffd45d}.badge.s{background:#4a1820;color:#ff8c98}.rowstatus{height:30px;width:125px;font-size:10px}.mini{border:0;background:#30151a;color:#ff9da6;border-radius:6px;width:27px;height:27px;cursor:pointer}
+.empty{text-align:center;padding:45px;color:#66818f}.empty .primary{margin-top:10px}.importbox{text-align:center;max-width:720px;margin:auto;padding:48px}.upload{font-size:45px;color:#4de8e6}.importbox input{max-width:420px;margin:18px auto}.exportgrid{display:grid;grid-template-columns:1fr 1fr;gap:17px}.exportcard{padding:35px}.settings{max-width:800px;margin-bottom:15px}.settingrow{display:flex;justify-content:space-between;border-top:1px solid #12374b;border-bottom:1px solid #12374b;padding:16px 0;margin:20px 0;color:#8fa7b2}.settingrow b{color:#4de8e6}
+.progress{height:6px;background:#092738;border-radius:8px;overflow:hidden;margin-top:14px}.progress i{display:block;height:100%;width:0;background:#4de8e6;transition:.2s}.muted{color:#718b99!important}.toast{position:fixed;right:22px;bottom:22px;z-index:100;background:#08273a;border:1px solid #1b6176;color:#e5ffff;padding:13px 17px;border-radius:10px;box-shadow:0 10px 40px #0008;opacity:0;transform:translateY(15px);pointer-events:none;transition:.2s;font-size:12px}.toast.show{opacity:1;transform:none}
+@media(max-width:1050px){.metrics{grid-template-columns:repeat(3,1fr)}.grid,.searchgrid{grid-template-columns:1fr}}
+@media(max-width:700px){.side{position:fixed;bottom:0;left:0;right:0;width:100%;height:68px;padding:4px;z-index:50;border-right:0;border-top:1px solid #12384d}.brand,.sidebottom{display:none}.nav{display:flex;justify-content:space-around}.nav button{height:60px;text-align:center;padding:0;font-size:9px}.nav button span{display:block;width:auto;height:25px}.top{height:64px;padding:0 13px}.mobilebrand{display:block}.searchtop{display:none}.topright{gap:8px}.page{padding:25px 13px 90px}.hero,.title{display:block}.hero h1,.title h1{font-size:27px}.hero .primary,.title .primary{width:100%;margin-top:17px}.metrics{grid-template-columns:1fr 1fr}.metric{padding:14px}.metric strong{font-size:24px}.exportgrid{grid-template-columns:1fr}.toolbar{display:grid}.toolbar input,.toolbar select{max-width:none}.panel{padding:16px}}
+</style>
 </head>
 <body>
-<div id="toast"></div>
+<div id="toast" class="toast"></div>
+<div class="app">
+<aside class="side">
+  <div class="brand"><div class="logo">✦</div><div><b>NEXXTY <span>ONE</span></b><small>LEADS • NEGÓCIOS • RESULTADOS</small></div></div>
+  <nav class="nav">
+    <button class="navbtn active" data-page="dashboard"><span>⌂</span>Dashboard</button>
+    <button class="navbtn" data-page="search"><span>⌕</span>Buscar</button>
+    <button class="navbtn" data-page="leads"><span>♙</span>Meus leads</button>
+    <button class="navbtn" data-page="import"><span>⇧</span>Importar</button>
+    <button class="navbtn" data-page="export"><span>⇩</span>Exportar</button>
+    <button class="navbtn" data-page="settings"><span>⚙</span>Config.</button>
+  </nav>
+  <div class="sidebottom"><div class="promo"><div class="big">↗</div><h3>Mais negócios,<br>mais oportunidades.</h3><p>Prospecção organizada em um só lugar.</p></div><div class="version">NEXXTY ONE v2.1 • GitHub Pages</div></div>
+</aside>
+<main class="main">
+<header class="top"><div class="mobilebrand">NEXXTY <span>ONE</span></div><div class="searchtop"><span>⌕</span><input id="global" placeholder="Pesquise por nome, cidade, telefone..."></div><div class="topright"><span>●</span><span class="avatar">N</span></div></header>
 
-<div class="app-shell">
-  <aside class="sidebar">
-    <div class="brand">
-      <div class="brand-mark">✦</div>
-      <div><strong>NEXXTY <span>ONE</span></strong><small>LEADS • NEGÓCIOS • RESULTADOS</small></div>
-    </div>
-
-    <nav>
-      <button class="nav-item active" data-page="dashboard"><i>⌂</i> Dashboard</button>
-      <button class="nav-item" data-page="search"><i>⌕</i> Buscar negócios</button>
-      <button class="nav-item" data-page="leads"><i>♙</i> Meus leads</button>
-      <button class="nav-item" data-page="import"><i>⇧</i> Importar dados</button>
-      <button class="nav-item" data-page="export"><i>⇩</i> Exportar dados</button>
-      <button class="nav-item" data-page="settings"><i>⚙</i> Configurações</button>
-    </nav>
-
-    <div class="sidebar-bottom">
-      <div class="side-promo">
-        <div class="rocket">↗</div>
-        <h3>Mais negócios,<br>mais oportunidades.</h3>
-        <p>NEXXTY ONE transforma pesquisa em prospecção organizada.</p>
-      </div>
-      <div class="version">NEXXTY ONE <b>v2.0</b> • GitHub Pages</div>
-    </div>
-  </aside>
-
-  <main class="main">
-    <header class="topbar">
-      <div class="mobile-brand">NEXXTY <span>ONE</span></div>
-      <div class="global-search">
-        <span>⌕</span><input id="globalSearch" placeholder="Pesquise por nome, cidade, telefone..." autocomplete="off">
-      </div>
-      <div class="top-actions"><button id="clearSearch" title="Limpar busca">×</button><div class="status-dot"></div><span class="avatar">N</span></div>
-    </header>
-
-    <section id="dashboard" class="page active">
-      <div class="hero">
-        <div>
-          <div class="eyebrow">LEAD INTELLIGENCE</div>
-          <h1>Bem-vindo ao <span>NEXXTY ONE</span></h1>
-          <p>Encontre negócios, organize seus leads e transforme oportunidades em clientes.</p>
-        </div>
-        <button class="primary big" data-go="search">⌕ &nbsp; Procurar novos negócios</button>
-      </div>
-
-      <div class="metrics">
-        <div class="metric"><div class="metric-icon cyan">♙</div><span>Total de leads</span><strong id="mTotal">0</strong><small>base local</small></div>
-        <div class="metric"><div class="metric-icon green">+</div><span>Novos leads</span><strong id="mNew">0</strong><small>aguardando contato</small></div>
-        <div class="metric"><div class="metric-icon blue">◌</div><span>Respostas</span><strong id="mReply">0</strong><small>em acompanhamento</small></div>
-        <div class="metric"><div class="metric-icon gold">♛</div><span>Clientes</span><strong id="mClients">0</strong><small>convertidos</small></div>
-        <div class="metric"><div class="metric-icon purple">↗</div><span>Com site</span><strong id="mSites">0</strong><small>presença digital</small></div>
-      </div>
-
-      <div class="content-grid">
-        <div class="panel leads-panel">
-          <div class="panel-head"><div><h2>Últimos leads</h2><p>Seus negócios mais recentes.</p></div><button class="link-btn" data-go="leads">Ver todos →</button></div>
-          <div id="recentTable"></div>
-        </div>
-        <div class="right-stack">
-          <div class="panel quick-search">
-            <div class="panel-head"><div><h2>⌕ &nbsp;Buscar novos negócios</h2><p>Pesquise empresas por categoria e cidade.</p></div></div>
-            <label>Categoria</label><select id="quickCategory"></select>
-            <label>Cidade(s)</label><input id="quickCity" placeholder="Ex.: Poços de Caldas, Pouso Alegre">
-            <label>Quantidade por cidade</label><input id="quickLimit" type="number" min="5" max="100" value="20">
-            <button class="primary full" id="quickSearchBtn">⌕ &nbsp; Iniciar busca</button>
-            <div class="new-only"><input id="onlyNew" type="checkbox" checked><label for="onlyNew">Somente resultados ainda não encontrados</label></div>
-          </div>
-          <div class="panel">
-            <h2>⚡ Ações rápidas</h2>
-            <div class="action-list">
-              <button data-go="import">⇧ &nbsp; Importar CSV</button>
-              <button id="exportQuick">⇩ &nbsp; Exportar CSV</button>
-              <button id="backupQuick">▣ &nbsp; Fazer backup</button>
-            </div>
-          </div>
-          <div class="system-card"><span class="online"></span><div><b>Sistema online</b><small>Dados salvos neste navegador</small></div></div>
-        </div>
-      </div>
-    </section>
-
-    <section id="search" class="page">
-      <div class="page-title"><div><div class="eyebrow">PROSPECÇÃO</div><h1>Buscar negócios</h1><p>Encontre novos estabelecimentos usando dados públicos do OpenStreetMap.</p></div></div>
-      <div class="search-layout">
-        <div class="panel search-box">
-          <h2>Nova pesquisa</h2>
-          <p class="muted">O NEXXTY ONE compara os resultados com sua base local e pode mostrar somente empresas que você ainda não encontrou.</p>
-          <label>Categoria</label><select id="category"></select>
-          <label>Cidade(s)</label><input id="cities" placeholder="Ex.: Poços de Caldas, Pouso Alegre">
-          <label>Máximo de resultados por cidade</label><input id="limit" type="number" min="5" max="100" value="30">
-          <div class="search-options"><label class="check"><input id="newOnly" type="checkbox" checked> <span>Mostrar apenas novos resultados</span></label><label class="check"><input id="autoSave" type="checkbox" checked> <span>Salvar automaticamente na minha base</span></label></div>
-          <button class="primary full" id="searchBtn">⌕ &nbsp; Procurar novos negócios</button>
-          <div id="searchStatus"></div>
-        </div>
-        <div class="panel info-panel">
-          <div class="big-icon">✦</div><h2>Busca inteligente</h2>
-          <p>Ao pesquisar novamente a mesma categoria e cidade, o sistema compara o nome + cidade com os leads já salvos.</p>
-          <div class="info-row"><b>1</b><span>Busca negócios públicos</span></div>
-          <div class="info-row"><b>2</b><span>Remove duplicados</span></div>
-          <div class="info-row"><b>3</b><span>Destaca apenas os novos</span></div>
-          <div class="info-row"><b>4</b><span>Salva na sua base local</span></div>
-        </div>
-      </div>
-      <div class="panel results-panel" id="resultsPanel" hidden><div class="panel-head"><div><h2>Resultados da pesquisa</h2><p id="resultsInfo"></p></div><button class="secondary" id="saveResults">Salvar resultados</button></div><div id="resultsTable"></div></div>
-    </section>
-
-    <section id="leads" class="page">
-      <div class="page-title"><div><div class="eyebrow">CRM</div><h1>Meus leads</h1><p>Gerencie sua base de prospecção.</p></div><button class="primary" data-go="search">+ Procurar novos</button></div>
-      <div class="toolbar"><input id="leadSearch" placeholder="⌕ Pesquisar lead..."><select id="statusFilter"><option>Todos</option><option>Novo lead</option><option>Contato feito</option><option>Respondeu</option><option>Cliente</option><option>Sem interesse</option></select></div>
-      <div class="panel"><div id="allTable"></div></div>
-    </section>
-
-    <section id="import" class="page">
-      <div class="page-title"><div><div class="eyebrow">DADOS</div><h1>Importar dados</h1><p>Adicione uma planilha CSV à sua base.</p></div></div>
-      <div class="panel import-box"><div class="upload-icon">⇧</div><h2>Importar CSV</h2><p>Escolha um arquivo CSV com colunas como Nome, Cidade, Telefone, WhatsApp, Instagram e Site.</p><input id="csvFile" type="file" accept=".csv,text/csv"><button class="primary" id="importBtn">Importar arquivo</button><div id="importStatus"></div></div>
-    </section>
-
-    <section id="export" class="page">
-      <div class="page-title"><div><div class="eyebrow">DADOS</div><h1>Exportar dados</h1><p>Baixe sua base para continuar trabalhando onde quiser.</p></div></div>
-      <div class="export-cards"><div class="panel export-card"><div class="big-icon">⇩</div><h2>CSV completo</h2><p>Todos os leads, contatos, status e links.</p><button class="primary" id="exportBtn">Baixar CSV</button></div><div class="panel export-card"><div class="big-icon">▣</div><h2>Backup</h2><p>Faça uma cópia da sua base atual.</p><button class="secondary" id="backupBtn">Baixar backup</button></div></div>
-    </section>
-
-    <section id="settings" class="page">
-      <div class="page-title"><div><div class="eyebrow">SISTEMA</div><h1>Configurações</h1><p>Controle sua base local.</p></div></div>
-      <div class="panel settings-box"><h2>Armazenamento</h2><p>Os leads ficam salvos no armazenamento local deste navegador. Eles não são enviados para um servidor pelo GitHub Pages.</p><div class="setting-row"><span>Leads armazenados</span><b id="settingsCount">0</b></div><button class="danger" id="clearData">Apagar todos os leads deste navegador</button></div>
-      <div class="panel settings-box"><h2>Sobre</h2><p>NEXXTY ONE v2.0 • GitHub Pages • Pesquisa com dados públicos do OpenStreetMap.</p></div>
-    </section>
-  </main>
+<section id="dashboard" class="page active">
+<div class="hero"><div><div class="eyebrow">LEAD INTELLIGENCE</div><h1>Bem-vindo ao <span>NEXXTY ONE</span></h1><p>Encontre negócios, organize seus leads e transforme oportunidades em clientes.</p></div><button class="primary" data-go="search">⌕ &nbsp; Procurar novos negócios</button></div>
+<div class="metrics">
+<div class="metric"><div class="mi cyan">♙</div><span>Total de leads</span><strong id="mtotal">0</strong><small>base local</small></div>
+<div class="metric"><div class="mi green">+</div><span>Novos leads</span><strong id="mnew">0</strong><small>aguardando contato</small></div>
+<div class="metric"><div class="mi blue">◌</div><span>Respostas</span><strong id="mreply">0</strong><small>em acompanhamento</small></div>
+<div class="metric"><div class="mi gold">♛</div><span>Clientes</span><strong id="mclient">0</strong><small>convertidos</small></div>
+<div class="metric"><div class="mi purple">↗</div><span>Com site</span><strong id="msite">0</strong><small>presença digital</small></div>
 </div>
-<script src="app.js"></script>
+<div class="grid"><div class="panel"><div class="head"><div><h2>Últimos leads</h2><p>Seus negócios mais recentes.</p></div><button class="link" data-go="leads">Ver todos →</button></div><div id="recent"></div></div>
+<div class="stack">
+<div class="panel"><div class="head"><div><h2>⌕ Buscar novos negócios</h2><p>Pesquise empresas por categoria e cidade.</p></div></div>
+<label>Categoria</label><select id="qcat"></select><label>Cidade(s)</label><input id="qcity" placeholder="Ex.: Poços de Caldas, Pouso Alegre"><label>Quantidade por cidade</label><input id="qlimit" type="number" min="5" max="100" value="20"><label class="check"><input id="qnew" type="checkbox" checked><span>Somente resultados ainda não encontrados</span></label><button class="primary full" id="qsearch">⌕ &nbsp; Iniciar busca</button></div>
+<div class="panel"><h2>⚡ Ações rápidas</h2><div class="actions"><button id="qimport">⇧ &nbsp; Importar CSV</button><button id="qexport">⇩ &nbsp; Exportar CSV</button><button id="qbackup">▣ &nbsp; Fazer backup</button></div></div>
+<div class="online"><span class="dot"></span><div><b>Sistema online</b><small>Dados salvos neste navegador</small></div></div>
+</div></div>
+</section>
+
+<section id="search" class="page">
+<div class="title"><div><div class="eyebrow">PROSPECÇÃO</div><h1>Buscar negócios</h1><p>Encontre novos estabelecimentos usando dados públicos.</p></div></div>
+<div class="searchgrid"><div class="panel"><h2>Nova pesquisa</h2><p class="muted">A busca compara os resultados com sua base e pode mostrar somente empresas novas.</p><label>Categoria</label><select id="cat"></select><label>Cidade(s)</label><input id="cities" placeholder="Ex.: Poços de Caldas, Pouso Alegre"><label>Máximo por cidade</label><input id="limit" type="number" min="5" max="100" value="30"><label class="check"><input id="newonly" type="checkbox" checked><span>Mostrar apenas novos resultados</span></label><label class="check"><input id="autosave" type="checkbox" checked><span>Salvar automaticamente na minha base</span></label><button class="primary full" id="searchbtn">⌕ &nbsp; Procurar novos negócios</button><div id="searchstatus"></div></div>
+<div class="panel info"><div class="symbol">✦</div><h2>Busca inteligente</h2><p>O sistema compara <b>nome + cidade</b> com seus leads para evitar resultados repetidos.</p><div class="info-row"><b>1</b>Busca negócios públicos</div><div class="info-row"><b>2</b>Remove duplicados</div><div class="info-row"><b>3</b>Filtra os já encontrados</div><div class="info-row"><b>4</b>Salva os novos</div></div></div>
+<div id="resultbox" class="panel" style="margin-top:17px;display:none"><div class="head"><div><h2>Resultados</h2><p id="resultinfo"></p></div><button class="secondary" id="saveresults">Salvar resultados</button></div><div id="results"></div></div>
+</section>
+
+<section id="leads" class="page"><div class="title"><div><div class="eyebrow">CRM</div><h1>Meus leads</h1><p>Gerencie sua base de prospecção.</p></div><button class="primary" data-go="search">+ Procurar novos</button></div><div class="toolbar"><input id="leadq" placeholder="⌕ Pesquisar lead..."><select id="status"><option>Todos</option><option>Novo lead</option><option>Contato feito</option><option>Respondeu</option><option>Cliente</option><option>Sem interesse</option></select></div><div class="panel"><div id="all"></div></div></section>
+
+<section id="import" class="page"><div class="title"><div><div class="eyebrow">DADOS</div><h1>Importar dados</h1><p>Adicione uma planilha CSV.</p></div></div><div class="panel importbox"><div class="upload">⇧</div><h2>Importar CSV</h2><p>Colunas aceitas: Nome, Cidade, Telefone, WhatsApp, Instagram, Site, Status.</p><input id="file" type="file" accept=".csv,text/csv"><button class="primary" id="importbtn">Importar arquivo</button><p id="importmsg"></p></div></section>
+
+<section id="export" class="page"><div class="title"><div><div class="eyebrow">DADOS</div><h1>Exportar dados</h1><p>Baixe sua base.</p></div></div><div class="exportgrid"><div class="panel exportcard"><div class="upload">⇩</div><h2>CSV completo</h2><p>Todos os seus leads.</p><button class="primary" id="exportbtn">Baixar CSV</button></div><div class="panel exportcard"><div class="upload">▣</div><h2>Backup</h2><p>Uma cópia da base atual.</p><button class="secondary" id="backupbtn">Baixar backup</button></div></div></section>
+
+<section id="settings" class="page"><div class="title"><div><div class="eyebrow">SISTEMA</div><h1>Configurações</h1><p>Controle sua base local.</p></div></div><div class="panel settings"><h2>Armazenamento</h2><p>Os leads ficam salvos neste navegador. O GitHub Pages não cria um banco compartilhado.</p><div class="settingrow"><span>Leads armazenados</span><b id="count">0</b></div><button class="danger" id="clear">Apagar todos os leads</button></div><div class="panel settings"><h2>Sobre</h2><p>NEXXTY ONE v2.1 • GitHub Pages • OpenStreetMap/Overpass.</p></div></section>
+</main></div>
+
+<script>
+(function(){
+"use strict";
+const KEY="nexxty_one_v21";
+let leads=load(), last=[];
+const cats={
+"Restaurantes":[["amenity","restaurant"],["amenity","fast_food"],["amenity","food_court"]],
+"Cafés":[["amenity","cafe"]],"Bares":[["amenity","bar"],["amenity","pub"]],
+"Hotéis":[["tourism","hotel"],["tourism","hostel"],["tourism","guest_house"]],
+"Lojas":[["shop","*"]],"Barbearias":[["shop","hairdresser"],["shop","beauty"]],
+"Farmácias":[["amenity","pharmacy"]],"Academias":[["leisure","fitness_centre"],["sport","fitness"]],
+"Imobiliárias":[["office","estate_agent"]],"Advogados":[["office","lawyer"]],
+"Fotógrafos":[["craft","photographer"]],"Oficinas":[["shop","car_repair"],["shop","motorcycle"]],
+"Pet shops":[["shop","pet"]],"Dentistas":[["amenity","dentist"],["amenity","doctors"]],
+"Clínicas":[["amenity","clinic"],["amenity","doctors"]],"Salões de beleza":[["shop","beauty"],["shop","hairdresser"]],
+"Padarias":[["shop","bakery"]],"Mercados":[["shop","supermarket"],["shop","convenience"]],
+"Concessionárias":[["shop","car"]],"Escolas":[["amenity","school"],["amenity","college"]],
+"Veterinários":[["amenity","veterinary"]],"Floriculturas":[["shop","florist"]],
+"Lojas de roupas":[["shop","clothes"],["shop","fashion"]],"Móveis":[["shop","furniture"]]
+};
+function load(){try{return JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){return[]}}
+function save(){localStorage.setItem(KEY,JSON.stringify(leads));render()}
+function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+function toast(t){const e=document.getElementById("toast");e.textContent=t;e.classList.add("show");clearTimeout(window._toast);window._toast=setTimeout(()=>e.classList.remove("show"),2400)}
+function go(id){document.querySelectorAll(".page").forEach(x=>x.classList.toggle("active",x.id===id));document.querySelectorAll(".navbtn").forEach(x=>x.classList.toggle("active",x.dataset.page===id));window.scrollTo(0,0);if(id==="leads")renderLeads()}
+function phone(v){let n=String(v||"").replace(/\D/g,"");if(n.startsWith("55")&&n.length>=12)n=n.slice(2);if(n.length===11)return`(${n.slice(0,2)}) ${n.slice(2,7)}-${n.slice(7)}`;if(n.length===10)return`(${n.slice(0,2)}) ${n.slice(2,6)}-${n.slice(6)}`;return v||""}
+function link(v){if(!v)return"";v=String(v).trim();return/^https?:\/\//i.test(v)?v:"https://"+v}
+function key(x){return(String(x.Nome||"").trim().toLowerCase()+"|"+String(x.Cidade||"").trim().toLowerCase())}
+function badge(s){s=s||"Novo lead";let c=s==="Cliente"?"c":s==="Respondeu"?"r":s==="Contato feito"?"ct":s==="Sem interesse"?"s":"";return`<span class="badge ${c}">${esc(s)}</span>`}
+function table(data,edit){
+if(!data.length)return`<div class="empty">Nenhum lead encontrado.<br><button class="primary" data-go="search">Procurar novos negócios</button></div>`;
+return`<div class="tablewrap"><table class="table"><thead><tr><th>Nome</th><th>Cidade</th><th>Telefone</th><th>WhatsApp</th><th>Instagram</th><th>Site</th><th>Status</th><th>Fonte</th>${edit?"<th></th>":""}</tr></thead><tbody>`+
+data.map(x=>`<tr><td><b>${esc(x.Nome)}</b></td><td>${esc(x.Cidade)}</td><td>${esc(phone(x.Telefone))}</td><td>${x.WhatsApp?`<a target="_blank" href="${esc(link(x.WhatsApp))}">Abrir</a>`:"—"}</td><td>${x.Instagram?`<a target="_blank" href="${esc(link(x.Instagram))}">Instagram</a>`:"—"}</td><td>${x.Site?`<a target="_blank" href="${esc(link(x.Site))}">Abrir</a>`:"—"}</td><td>${edit?`<select class="rowstatus" data-i="${leads.indexOf(x)}">${["Novo lead","Contato feito","Respondeu","Cliente","Sem interesse"].map(s=>`<option ${s===(x.Status||"Novo lead")?"selected":""}>${s}</option>`).join("")}</select>`:badge(x.Status)}</td><td>${esc(x.Fonte||"OpenStreetMap")}</td>${edit?`<td><button class="mini del" data-i="${leads.indexOf(x)}">×</button></td>`:""}</tr>`).join("")+
+`</tbody></table></div>`
+}
+function renderLeads(){
+document.getElementById("mtotal").textContent=leads.length;
+document.getElementById("mnew").textContent=leads.filter(x=>(x.Status||"Novo lead")==="Novo lead").length;
+document.getElementById("mreply").textContent=leads.filter(x=>x.Status==="Respondeu").length;
+document.getElementById("mclient").textContent=leads.filter(x=>x.Status==="Cliente").length;
+document.getElementById("msite").textContent=leads.filter(x=>x.Site).length;
+document.getElementById("count").textContent=leads.length;
+document.getElementById("recent").innerHTML=table(leads.slice(-10).reverse(),false);
+let q=(document.getElementById("leadq")?.value||"").toLowerCase(),s=document.getElementById("status")?.value||"Todos";
+let f=leads.filter(x=>!q||[x.Nome,x.Cidade,x.Telefone].join(" ").toLowerCase().includes(q)).filter(x=>s==="Todos"||x.Status===s);
+document.getElementById("all").innerHTML=table(f,true);
+document.querySelectorAll(".rowstatus").forEach(e=>e.onchange=function(){leads[+this.dataset.i].Status=this.value;save();toast("Status atualizado")});
+document.querySelectorAll(".del").forEach(e=>e.onclick=function(){if(confirm("Excluir este lead?")){leads.splice(+this.dataset.i,1);save();toast("Lead excluído")}});
+}
+function fill(){["cat","qcat"].forEach(id=>document.getElementById(id).innerHTML=Object.keys(cats).map(x=>`<option>${x}</option>`).join(""))}
+function overpassQuery(tags,b){return`[out:json][timeout:50];(${tags.map(t=>t[1]==="*" ? `nwr["${t[0]}"](${b.south},${b.west},${b.north},${b.east});`:`nwr["${t[0]}"="${t[1]}"](${b.south},${b.west},${b.north},${b.east});`).join("")});out center tags;`}
+async function locate(city){let r=await fetch("https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=br&q="+encodeURIComponent(city+", Brasil"));if(!r.ok)throw Error();let a=await r.json();if(!a.length)throw Error("Cidade não encontrada");let b=a[0].boundingbox;return{south:+b[0]-.015,north:+b[1]+.015,west:+b[2]-.015,east:+b[3]+.015}}
+async function osm(q){let urls=["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter"];for(const u of urls){try{let r=await fetch(u,{method:"POST",body:q});if(r.ok)return await r.json()}catch(e){}}throw Error("Serviço de pesquisa indisponível")}
+function parse(data,city){let m=new Map();(data.elements||[]).forEach(el=>{let t=el.tags||{},name=(t.name||t.brand||t.operator||"").trim();if(!name)return;let x={Nome:name,Cidade:city,Telefone:phone(t.phone||t["contact:phone"]||t.telephone||""),WhatsApp:link(t["contact:whatsapp"]||""),Instagram:link(t["contact:instagram"]||""),Site:link(t.website||t["contact:website"]||t.url||""),Status:"Novo lead",Fonte:"OpenStreetMap",Observações:""};m.set(key(x),x)});return[...m.values()]}
+async function runSearch(fromQuick){
+let cat=document.getElementById(fromQuick?"qcat":"cat").value;
+let cities=document.getElementById(fromQuick?"qcity":"cities").value.split(",").map(x=>x.trim()).filter(Boolean);
+let lim=Math.max(5,Math.min(100,+document.getElementById(fromQuick?"qlimit":"limit").value||20));
+let only=document.getElementById(fromQuick?"qnew":"newonly").checked;
+if(!cities.length){toast("Digite uma cidade.");return}
+if(!fromQuick)document.getElementById("searchstatus").innerHTML='<div class="progress"><i id="bar"></i></div><p class="muted" id="st">Iniciando...</p>';
+let btn=document.getElementById(fromQuick?"qsearch":"searchbtn");btn.disabled=true;btn.textContent="⌛ Pesquisando...";
+let found=[];
+try{
+for(let i=0;i<cities.length;i++){
+let b=await locate(cities[i]),data=await osm(overpassQuery(cats[cat],b)),arr=parse(data,cities[i]);
+if(only)arr=arr.filter(x=>!leads.some(l=>key(l)===key(x)));
+found.push(...arr.slice(0,lim));
+if(!fromQuick){document.getElementById("bar").style.width=((i+1)/cities.length*100)+"%";document.getElementById("st").textContent=`Pesquisada ${i+1} de ${cities.length} cidade(s)`}}
+let map=new Map();found.forEach(x=>map.set(key(x),x));last=[...map.values()];
+if(!fromQuick){document.getElementById("resultbox").style.display="block";document.getElementById("resultinfo").textContent=`${last.length} novo(s) encontrado(s)`;document.getElementById("results").innerHTML=table(last,false)}
+if(last.length){let autos=fromQuick?true:document.getElementById("autosave").checked;if(autos){last.forEach(x=>{if(!leads.some(l=>key(l)===key(x)))leads.push(x)});save();toast(`${last.length} novos negócios encontrados e salvos!`)}else toast(`${last.length} novos negócios encontrados!`)}else toast("Nenhum negócio novo encontrado.")
+}catch(e){console.error(e);toast("A pesquisa falhou. Tente novamente.")}
+finally{btn.disabled=false;btn.textContent=fromQuick?"⌕  Iniciar busca":"⌕  Procurar novos negócios";if(!fromQuick)document.getElementById("searchstatus").innerHTML=""}
+}
+function csvEsc(v){return`"${String(v??"").replace(/"/g,'""')}"`}
+function download(name){let cols=["Nome","Cidade","Telefone","WhatsApp","Instagram","Site","Status","Fonte","Observações"];let txt="\ufeff"+[cols,...leads.map(x=>cols.map(c=>x[c]||""))].map(r=>r.map(csvEsc).join(";")).join("\n");let a=document.createElement("a");a.href=URL.createObjectURL(new Blob([txt],{type:"text/csv;charset=utf-8"}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function split(line){let o=[],c="",q=false;for(let i=0;i<line.length;i++){let x=line[i];if(x==='"'&&line[i+1]==='"'){c+='"';i++}else if(x==='"')q=!q;else if((x===";"||x===",")&&!q){o.push(c);c=""}else c+=x}o.push(c);return o}
+function importCSV(txt){let lines=txt.replace(/^\ufeff/,"").split(/\r?\n/).filter(Boolean),h=split(lines.shift()).map(x=>x.trim()),n=0;lines.forEach(l=>{let v=split(l),x={};h.forEach((a,i)=>x[a]=v[i]||"");if(x.Nome&&!leads.some(z=>key(z)===key(x))){leads.push({...x,Status:x.Status||"Novo lead"});n++}});save();return n}
+document.addEventListener("click",e=>{
+let n=e.target.closest("[data-page]");if(n)go(n.dataset.page);
+let g=e.target.closest("[data-go]");if(g)go(g.dataset.go);
+});
+document.getElementById("searchbtn").onclick=()=>runSearch(false);
+document.getElementById("qsearch").onclick=()=>runSearch(true);
+document.getElementById("saveresults").onclick=()=>{let n=0;last.forEach(x=>{if(!leads.some(l=>key(l)===key(x))){leads.push(x);n++}});save();toast(`${n} lead(s) salvo(s).`)};
+document.getElementById("leadq").oninput=renderLeads;
+document.getElementById("status").onchange=renderLeads;
+document.getElementById("global").oninput=function(){let q=this.value.trim();if(q){go("leads");document.getElementById("leadq").value=q;renderLeads()}};
+document.getElementById("qimport").onclick=()=>go("import");
+document.getElementById("qexport").onclick=()=>download("nexxty-one-leads.csv");
+document.getElementById("qbackup").onclick=()=>download("nexxty-one-backup.csv");
+document.getElementById("exportbtn").onclick=()=>download("nexxty-one-leads.csv");
+document.getElementById("backupbtn").onclick=()=>download("nexxty-one-backup.csv");
+document.getElementById("clear").onclick=()=>{if(confirm("Apagar todos os leads deste navegador?")){leads=[];save();toast("Base apagada.")}};
+document.getElementById("importbtn").onclick=()=>{let f=document.getElementById("file").files[0];if(!f){toast("Escolha um CSV.");return}let r=new FileReader();r.onload=()=>{let n=importCSV(r.result);document.getElementById("importmsg").textContent=`${n} novo(s) lead(s) importado(s).`;toast(`${n} lead(s) importado(s).`)};r.readAsText(f,"UTF-8")};
+fill();renderLeads();
+})();
+</script>
 </body>
 </html>
