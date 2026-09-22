@@ -247,50 +247,28 @@ function overpassBrazilNameQuery(words){
   const rx=words.map(w=>String(w).replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join("|");
   return `[out:json][timeout:25];area["ISO3166-1"="BR"]->.br;(nwr["name"~"${rx}",i](area.br););out center tags 250;`;
 }
+function overpassWhatsappClauses(scope){
+  return `(nwr["contact:whatsapp"](${scope});nwr["whatsapp"](${scope}););`;
+}
+function overpassWhatsappStateQuery(uf){
+  return `[out:json][timeout:18];area["ISO3166-2"="BR-${uf}"][boundary="administrative"][admin_level=4]->.searchArea;${overpassWhatsappClauses("area.searchArea")}out center tags;`;
+}
+function overpassWhatsappBrazilQuery(){
+  return `[out:json][timeout:25];area["ISO3166-1"="BR"]->.br;${overpassWhatsappClauses("area.br")}out center tags 250;`;
+}
+function overpassWhatsappAroundQuery(b){
+  const r=15000;
+  return `[out:json][timeout:18];(nwr["contact:whatsapp"](around:${r},${b.lat},${b.lon});nwr["whatsapp"](around:${r},${b.lat},${b.lon}););out center tags;`;
+}
 async function osmBrazilBest(tags,category){
-  const words=CATEGORY_NAME_WORDS[category]||[];
-  const qs=[osm(overpassBrazilQuery(tags))];
-  if(words.length)qs.push(osm(overpassBrazilNameQuery(words)));
-  const settled=await Promise.allSettled(qs);
-  const merged=new Map();
-  for(const r of settled) if(r.status==="fulfilled") for(const el of (r.value.elements||[])) merged.set(String(el.type)+":"+el.id,el);
-  return {elements:[...merged.values()]};
-}
-function overpassStateQuery(tags,uf){
-  const parts=tags.map(t=>t[1]==="*"
-    ? `nwr["${t[0]}"](area.searchArea);`
-    : `nwr["${t[0]}"="${t[1]}"](area.searchArea);`);
-  return `[out:json][timeout:18];area["ISO3166-2"="BR-${uf}"][boundary="administrative"][admin_level=4]->.searchArea;(${parts.join("")});out center tags;`;
-}
-function overpassStateNameQuery(words,uf){
-  const rx=words.map(w=>String(w).replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join("|");
-  return `[out:json][timeout:18];area["ISO3166-2"="BR-${uf}"][boundary="administrative"][admin_level=4]->.searchArea;(nwr["name"~"${rx}",i](area.searchArea););out center tags;`;
+  return await osm(overpassWhatsappBrazilQuery());
 }
 async function osmStateBest(tags,uf,category){
-  const words=CATEGORY_NAME_WORDS[category]||[];
-  const qs=[osm(overpassStateQuery(tags,uf))];
-  if(words.length)qs.push(osm(overpassStateNameQuery(words,uf)));
-  const settled=await Promise.allSettled(qs);
-  const merged=new Map();
-  for(const r of settled) if(r.status==="fulfilled") for(const el of (r.value.elements||[])) merged.set(String(el.type)+":"+el.id,el);
-  return {elements:[...merged.values()]};
+  return await osm(overpassWhatsappStateQuery(uf));
 }
-
 async function osmBest(tags,b,category){
-  const words=CATEGORY_NAME_WORDS[category]||[];
-  const queries=[osm(overpassQuery(tags,b))];
-  if(words.length)queries.push(osm(overpassNameQuery(words,b)));
-  const settled=await Promise.allSettled(queries);
-  const merged=new Map();
-  for(const r of settled){if(r.status==="fulfilled"){for(const el of (r.value.elements||[]))merged.set(String(el.type)+":"+el.id,el)}}
-  if(merged.size<8){
-    const radius=15000;
-    const extra=[osm(overpassAroundQuery(tags,b.lat,b.lon,radius))];
-    if(words.length)extra.push(osm(overpassNameAroundQuery(words,b.lat,b.lon,radius)));
-    const more=await Promise.allSettled(extra);
-    for(const r of more){if(r.status==="fulfilled"){for(const el of (r.value.elements||[]))merged.set(String(el.type)+":"+el.id,el)}}
-  }
-  return {elements:[...merged.values()]};
+  const data=await osm(overpassWhatsappAroundQuery(b));
+  return data||{elements:[]};
 }
 
 function cleanUrl(v){try{let u=new URL(String(v).trim(),location.href);if(!/^https?:$/i.test(u.protocol))return"";return u.href}catch(e){return""}}
@@ -392,8 +370,10 @@ function parse(data,city){
     let t=el.tags||{},name=(t.name||t.brand||t.operator||"").trim();
     if(!name)return;
     let wa=t["contact:whatsapp"]||t.whatsapp||"";let ig=t["contact:instagram"]||t.instagram||t["social:instagram"]||"";let site=t.website||t["contact:website"]||t.url||"";let tel=t.phone||t["contact:phone"]||t.telephone||t.mobile||t["contact:mobile"]||"";
+    if(!wa)return;
     let realCity=t["addr:city"]||t["addr:town"]||t["addr:village"]||t["addr:municipality"]||city;
-    let x={Nome:name,Cidade:realCity,Telefone:phone(tel),WhatsApp:wa?normalizeSocial(wa,"whatsapp"):"",Instagram:ig?normalizeSocial(ig,"instagram"):"",Site:cleanUrl(site),Status:"Novo lead",Fonte:"OpenStreetMap",Observações:""};
+    let x={Nome:name,Cidade:realCity,Telefone:phone(tel),WhatsApp:normalizeSocial(wa,"whatsapp"),Instagram:ig?normalizeSocial(ig,"instagram"):"",Site:cleanUrl(site),Status:"Novo lead",Fonte:"OpenStreetMap",Observações:""};
+    if(!x.WhatsApp)return;
     m.set(key(x),x)
   });
   return[...m.values()]
@@ -504,13 +484,13 @@ async function runSearch(fromQuick){
   try{
     await Promise.all(Array.from({length:workers},worker));
     const map=new Map();found.forEach(x=>{if(!map.has(key(x)))map.set(key(x),x)});
-    let results=[...map.values()];
+    let results=[...map.values()].filter(x=>x&&x.WhatsApp);
     // Remove o excesso só depois da deduplicação. Assim, consultas paralelas
     // que encontrarem a mesma empresa não fazem perder leads únicos.
     last=results.slice(0,Math.min(5000,lim));
     // Enriquecimento acontece DEPOIS da coleta: não deixa WhatsApp/Instagram/site
     // travarem a descoberta dos primeiros 10/20 negócios.
-    if(document.getElementById("autoenrich")?.checked&&last.length){
+    if(false && document.getElementById("autoenrich")?.checked&&last.length){
       const batch=last;
       enrichLeads(batch).then(()=>{
         last=batch;
