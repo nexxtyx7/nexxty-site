@@ -247,28 +247,50 @@ function overpassBrazilNameQuery(words){
   const rx=words.map(w=>String(w).replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join("|");
   return `[out:json][timeout:25];area["ISO3166-1"="BR"]->.br;(nwr["name"~"${rx}",i](area.br););out center tags 250;`;
 }
-function overpassWhatsappClauses(scope){
-  return `(nwr["contact:whatsapp"](${scope});nwr["whatsapp"](${scope}););`;
-}
-function overpassWhatsappStateQuery(uf){
-  return `[out:json][timeout:18];area["ISO3166-2"="BR-${uf}"][boundary="administrative"][admin_level=4]->.searchArea;${overpassWhatsappClauses("area.searchArea")}out center tags;`;
-}
-function overpassWhatsappBrazilQuery(){
-  return `[out:json][timeout:25];area["ISO3166-1"="BR"]->.br;${overpassWhatsappClauses("area.br")}out center tags 250;`;
-}
-function overpassWhatsappAroundQuery(b){
-  const r=15000;
-  return `[out:json][timeout:18];(nwr["contact:whatsapp"](around:${r},${b.lat},${b.lon});nwr["whatsapp"](around:${r},${b.lat},${b.lon}););out center tags;`;
-}
 async function osmBrazilBest(tags,category){
-  return await osm(overpassWhatsappBrazilQuery());
+  const words=CATEGORY_NAME_WORDS[category]||[];
+  const qs=[osm(overpassBrazilQuery(tags))];
+  if(words.length)qs.push(osm(overpassBrazilNameQuery(words)));
+  const settled=await Promise.allSettled(qs);
+  const merged=new Map();
+  for(const r of settled) if(r.status==="fulfilled") for(const el of (r.value.elements||[])) merged.set(String(el.type)+":"+el.id,el);
+  return {elements:[...merged.values()]};
+}
+function overpassStateQuery(tags,uf){
+  const parts=tags.map(t=>t[1]==="*"
+    ? `nwr["${t[0]}"](area.searchArea);`
+    : `nwr["${t[0]}"="${t[1]}"](area.searchArea);`);
+  return `[out:json][timeout:18];area["ISO3166-2"="BR-${uf}"][boundary="administrative"][admin_level=4]->.searchArea;(${parts.join("")});out center tags;`;
+}
+function overpassStateNameQuery(words,uf){
+  const rx=words.map(w=>String(w).replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join("|");
+  return `[out:json][timeout:18];area["ISO3166-2"="BR-${uf}"][boundary="administrative"][admin_level=4]->.searchArea;(nwr["name"~"${rx}",i](area.searchArea););out center tags;`;
 }
 async function osmStateBest(tags,uf,category){
-  return await osm(overpassWhatsappStateQuery(uf));
+  const words=CATEGORY_NAME_WORDS[category]||[];
+  const qs=[osm(overpassStateQuery(tags,uf))];
+  if(words.length)qs.push(osm(overpassStateNameQuery(words,uf)));
+  const settled=await Promise.allSettled(qs);
+  const merged=new Map();
+  for(const r of settled) if(r.status==="fulfilled") for(const el of (r.value.elements||[])) merged.set(String(el.type)+":"+el.id,el);
+  return {elements:[...merged.values()]};
 }
+
 async function osmBest(tags,b,category){
-  const data=await osm(overpassWhatsappAroundQuery(b));
-  return data||{elements:[]};
+  const words=CATEGORY_NAME_WORDS[category]||[];
+  const queries=[osm(overpassQuery(tags,b))];
+  if(words.length)queries.push(osm(overpassNameQuery(words,b)));
+  const settled=await Promise.allSettled(queries);
+  const merged=new Map();
+  for(const r of settled){if(r.status==="fulfilled"){for(const el of (r.value.elements||[]))merged.set(String(el.type)+":"+el.id,el)}}
+  if(merged.size<8){
+    const radius=15000;
+    const extra=[osm(overpassAroundQuery(tags,b.lat,b.lon,radius))];
+    if(words.length)extra.push(osm(overpassNameAroundQuery(words,b.lat,b.lon,radius)));
+    const more=await Promise.allSettled(extra);
+    for(const r of more){if(r.status==="fulfilled"){for(const el of (r.value.elements||[]))merged.set(String(el.type)+":"+el.id,el)}}
+  }
+  return {elements:[...merged.values()]};
 }
 
 function cleanUrl(v){try{let u=new URL(String(v).trim(),location.href);if(!/^https?:$/i.test(u.protocol))return"";return u.href}catch(e){return""}}
@@ -291,28 +313,38 @@ function extractContactsFromHtml(html,base){
 }
 async function enrichFromWebSearch(x){
   if(!x||!x.Nome)return x;
-  const q=`"${x.Nome}" "${x.Cidade}" (instagram OR whatsapp OR site)`;
+  const qs=[
+    `"${x.Nome}" "${x.Cidade}" whatsapp`,
+    `"${x.Nome}" "${x.Cidade}" "wa.me"`,
+    `"${x.Nome}" "${x.Cidade}" "WhatsApp" telefone`
+  ];
   try{
-    const target="https://html.duckduckgo.com/html/?q="+encodeURIComponent(q);
-    const api="https://api.microlink.io/?url="+encodeURIComponent(target)+"&html=true";
-    const d=await fetchJSON(api,{},7000);
-    const html=d?.data?.html||"";
-    if(!html)return x;
-    const hrefs=[...html.matchAll(/href\s*=\s*["']([^"']+)["']/gi)].map(m=>m[1]);
-    for(const raw of hrefs){
-      let u=raw;
-      try{
-        if(/uddg=/i.test(u)){const part=u.split("uddg=")[1].split("&")[0];u=decodeURIComponent(part)}
-        else u=new URL(u,"https://html.duckduckgo.com").href;
-      }catch(e){}
-      if(!x.Instagram&&/instagram\.com\//i.test(u))x.Instagram=normalizeSocial(u,"instagram");
-      if(!x.WhatsApp&&/(wa\.me\/|whatsapp\.com\/|api\.whatsapp\.com\/)/i.test(u))x.WhatsApp=normalizeSocial(u,"whatsapp");
-      if(!x.Site&&/^https?:/i.test(u)&&!/(duckduckgo|instagram\.com|whatsapp\.com|google\.|facebook\.com)/i.test(u)){
-        try{const h=new URL(u).hostname.toLowerCase();if(h&&!/^(www\.)?duckduckgo\.com$/.test(h))x.Site=u}catch(e){}
+    const results=await Promise.allSettled(qs.map(q=>{
+      const target="https://html.duckduckgo.com/html/?q="+encodeURIComponent(q);
+      const api="https://api.microlink.io/?url="+encodeURIComponent(target)+"&html=true";
+      return fetchJSON(api,{},5500);
+    }));
+    for(const rr of results){
+      const html=rr.status==='fulfilled'?(rr.value?.data?.html||''):'';
+      if(!html)continue;
+      const hrefs=[...html.matchAll(/href\s*=\s*["']([^"']+)["']/gi)].map(m=>m[1]);
+      for(const raw of hrefs){
+        let u=raw;
+        try{
+          if(/uddg=/i.test(u)){const part=u.split('uddg=')[1].split('&')[0];u=decodeURIComponent(part)}
+          else u=new URL(u,'https://html.duckduckgo.com').href;
+        }catch(e){}
+        if(!x.WhatsApp&&/(wa\.me\/|whatsapp\.com\/|api\.whatsapp\.com\/)/i.test(u))x.WhatsApp=normalizeSocial(u,'whatsapp');
+        if(!x.Site&&/^https?:/i.test(u)&&!/(duckduckgo|instagram\.com|whatsapp\.com|google\.|facebook\.com)/i.test(u)){
+          try{const h=new URL(u).hostname.toLowerCase();if(h&&!/^(www\.)?duckduckgo\.com$/.test(h))x.Site=u}catch(e){}
+        }
       }
+      if(!x.WhatsApp){
+        const m=html.match(/(?:whatsapp|wa\.me)[^\n]{0,180}(?:\+?55[\s.-]*)?(?:\(?[1-9][0-9]\)?[\s.-]*)?9[0-9]{4}[\s.-]?[0-9]{4}/i);
+        if(m){const n=m[0].match(/(?:\+?55[\s.-]*)?(?:\(?[1-9][0-9]\)?[\s.-]*)?9[0-9]{4}[\s.-]?[0-9]{4}/);if(n)x.WhatsApp=phone(n[0])}
+      }
+      if(x.WhatsApp){x.Fonte=(x.Fonte||'OpenStreetMap')+' + WhatsApp verificado por fonte pública';break}
     }
-    if(!x.Telefone){const m=html.match(/(?:\+?55\s*)?(?:\(?\d{2}\)?\s*)?9?\d{4}[\s.-]?\d{4}/);if(m)x.Telefone=phone(m[0])}
-    if(x.Instagram||x.WhatsApp||x.Site||x.Telefone)x.Fonte=(x.Fonte||"OpenStreetMap")+" + busca web";
   }catch(e){}
   return x;
 }
@@ -370,10 +402,8 @@ function parse(data,city){
     let t=el.tags||{},name=(t.name||t.brand||t.operator||"").trim();
     if(!name)return;
     let wa=t["contact:whatsapp"]||t.whatsapp||"";let ig=t["contact:instagram"]||t.instagram||t["social:instagram"]||"";let site=t.website||t["contact:website"]||t.url||"";let tel=t.phone||t["contact:phone"]||t.telephone||t.mobile||t["contact:mobile"]||"";
-    if(!wa)return;
     let realCity=t["addr:city"]||t["addr:town"]||t["addr:village"]||t["addr:municipality"]||city;
-    let x={Nome:name,Cidade:realCity,Telefone:phone(tel),WhatsApp:normalizeSocial(wa,"whatsapp"),Instagram:ig?normalizeSocial(ig,"instagram"):"",Site:cleanUrl(site),Status:"Novo lead",Fonte:"OpenStreetMap",Observações:""};
-    if(!x.WhatsApp)return;
+    let x={Nome:name,Cidade:realCity,Telefone:phone(tel),WhatsApp:wa?normalizeSocial(wa,"whatsapp"):"",Instagram:ig?normalizeSocial(ig,"instagram"):"",Site:cleanUrl(site),Status:"Novo lead",Fonte:"OpenStreetMap",Observações:""};
     m.set(key(x),x)
   });
   return[...m.values()]
@@ -428,87 +458,74 @@ async function getAllBrazilCities(){
 }
 
 async function runSearch(fromQuick){
-  const cat=document.getElementById("cat").value;
-  const cityInput=document.getElementById("cities");
-  let rawCities=String(cityInput.value||"").trim();
+  const cat=document.getElementById('cat').value;
+  const cityInput=document.getElementById('cities');
+  let rawCities=String(cityInput.value||'').trim();
   let cities=rawCities.split(/[;\n]+/).map(x=>x.trim()).filter(Boolean);
   const national=!cities.length;
-  if(national){
-    // Nacional usa as 27 UFs como blocos de busca. Isso evita a consulta gigantesca
-    // do Brasil inteiro, mas também evita percorrer milhares de municípios.
-    cities=BRAZIL_STATES.slice();
-  }
-  const lim=Math.max(5,Math.min(100,+document.getElementById("limit").value||20));
-  const only=document.getElementById("newonly").checked;
-  document.getElementById("searchstatus").innerHTML='<div class="progress"><i id="bar"></i></div><p class="muted" id="st">Preparando busca...</p><div id="diag" class="muted" style="font-size:12px;margin-top:8px"></div>';
-  const btn=document.getElementById("searchbtn");btn.disabled=true;btn.textContent="⌛ Pesquisando...";
-  let found=[],next=0,finished=0,stop=false;
-  const targetReached=()=>found.length>=lim;
-  // 6 workers na busca nacional; 4 para cidade(s) informadas. Paramos assim
-  // que a quantidade pedida for atingida, sem esperar o restante do Brasil.
-  const workers=national?Math.min(5,cities.length):Math.min(4,cities.length);
+  if(national)cities=BRAZIL_STATES.slice();
+  const lim=Math.max(5,Math.min(100,+document.getElementById('limit').value||20));
+  const only=document.getElementById('newonly').checked;
+  document.getElementById('searchstatus').innerHTML='<div class="progress"><i id="bar"></i></div><p class="muted" id="st">Procurando negócios e verificando WhatsApp...</p><div id="diag" class="muted" style="font-size:12px;margin-top:8px"></div>';
+  const btn=document.getElementById('searchbtn');btn.disabled=true;btn.textContent='⌛ Pesquisando...';
+  let candidates=[],next=0,finished=0,stop=false;
+  const workers=national?Math.min(8,cities.length):Math.min(5,cities.length);
   const worker=async()=>{
     while(!stop){
-      const i=next++;if(i>=cities.length||stop)return;
+      const i=next++;if(i>=cities.length)return;
       const city=cities[i];
       try{
-        document.getElementById("st").textContent=`Buscando ${cat} em ${national?(STATE_NAMES[city]||city):city}...`;
+        document.getElementById('st').textContent=`Buscando ${cat} em ${national?(STATE_NAMES[city]||city):city}...`;
         let arr=[];
         if(national){
           const stateName=STATE_NAMES[city]||city;
-          let data=await osmStateBest(cats[cat],city,cat);
-          arr=parse(data,stateName);
-          if(!arr.length){
-            try{ data=await fallbackPlaces(stateName,cat); arr=parse(data,stateName); }catch(e){}
-          }
+          let data=await osmStateBest(cats[cat],city,cat);arr=parse(data,stateName);
+          if(!arr.length){try{arr=parse(await fallbackPlaces(stateName,cat),stateName)}catch(e){}}
         }else{
-          const b=await locate(city);
-          let data=await osmBest(cats[cat],b,cat);
-          arr=parse(data,city);
-          if(!arr.length){
-            try{ data=await fallbackPlaces(city,cat); arr=parse(data,city); }catch(e){}
-          }
+          let b=await locate(city);
+          let data=await osmBest(cats[cat],b,cat);arr=parse(data,city);
+          if(!arr.length){try{arr=parse(await fallbackPlaces(city,cat),city)}catch(e){}}
         }
         if(only)arr=arr.filter(x=>!leads.some(l=>key(l)===key(x)));
-        found.push(...arr);
-        if(found.length>=lim)stop=true;
-      }catch(e){}finally{
+        candidates.push(...arr);
+      }catch(e){}
+      finally{
         finished++;
-        if(true){
-          document.getElementById("bar").style.width=(Math.min(100,finished/cities.length*100))+"%";
-          document.getElementById("diag").textContent=`${finished}/${cities.length} ${national?"consulta nacional":"cidades"} processada(s) • ${found.length} resultado(s)`;
-        }
+        const bar=document.getElementById('bar');if(bar)bar.style.width=(Math.min(100,finished/cities.length*100))+'%';
+        const d=document.getElementById('diag');if(d)d.textContent=`${finished}/${cities.length} ${national?'consultas nacionais':'cidades'} processada(s) • ${candidates.length} candidatos encontrados • procurando WhatsApp...`;
       }
     }
   };
   try{
     await Promise.all(Array.from({length:workers},worker));
-    const map=new Map();found.forEach(x=>{if(!map.has(key(x)))map.set(key(x),x)});
-    let results=[...map.values()].filter(x=>x&&x.WhatsApp);
-    // Remove o excesso só depois da deduplicação. Assim, consultas paralelas
-    // que encontrarem a mesma empresa não fazem perder leads únicos.
-    last=results.slice(0,Math.min(5000,lim));
-    // Enriquecimento acontece DEPOIS da coleta: não deixa WhatsApp/Instagram/site
-    // travarem a descoberta dos primeiros 10/20 negócios.
-    if(false && document.getElementById("autoenrich")?.checked&&last.length){
-      const batch=last;
-      enrichLeads(batch).then(()=>{
-        last=batch;
-        if(true){document.getElementById("results").innerHTML=table(last,false);document.getElementById("resultinfo").textContent=`${last.length} resultado(s) encontrado(s)`;}
-        batch.forEach(x=>{const i=leads.findIndex(l=>key(l)===key(x));if(i>=0)leads[i]=x;else leads.push(x)});save();
-      }).catch(()=>{});
-    }
-    if(true){document.getElementById("resultbox").style.display="block";document.getElementById("resultinfo").textContent=`${last.length} resultado(s) encontrado(s)`;document.getElementById("results").innerHTML=table(last,false);document.getElementById("diag").textContent=`Busca concluída • ${finished} ${national?"consulta nacional":"cidade(s)"} processada(s) • ${last.length} resultado(s)`}
+    const unique=new Map();candidates.forEach(x=>{if(!unique.has(key(x)))unique.set(key(x),x)});
+    let pool=[...unique.values()];
+    // O ponto importante: NÃO filtramos por WhatsApp na consulta OSM. OSM nem sempre
+    // tem a tag contact:whatsapp. Primeiro coletamos negócios reais e depois verificamos
+    // o WhatsApp em fontes públicas, evitando o falso zero anterior.
+    const verified=[];
+    let pi=0;
+    const ew=async()=>{while(true){const n=pi++;if(n>=pool.length||verified.length>=lim)return;const x=pool[n];try{await enrichLeads([x]);}catch(e){}if(x.WhatsApp)verified.push(x);const st=document.getElementById('st');if(st)st.textContent=`Verificando WhatsApp: ${verified.length}/${lim} encontrados...`;const d=document.getElementById('diag');if(d)d.textContent=`${verified.length} com WhatsApp confirmado • ${Math.min(n+1,pool.length)}/${pool.length} candidatos verificados`;}};
+    await Promise.all(Array.from({length:Math.min(8,pool.length)},ew));
+    // Se ainda faltarem resultados, continua procurando nas demais fontes/candidatos.
+    // Nunca transforma um telefone comum em WhatsApp sem evidência.
+    last=verified.slice(0,lim);
+    document.getElementById('resultbox').style.display='block';
+    document.getElementById('resultinfo').textContent=`${last.length} negócio(s) com WhatsApp encontrado(s)`;
+    document.getElementById('results').innerHTML=table(last,false);
+    const d=document.getElementById('diag');if(d)d.textContent=`Busca concluída • ${finished} consultas processadas • ${last.length} WhatsApp confirmado(s)`;
     if(last.length){
-      const autos=document.getElementById("autosave").checked;
+      const autos=document.getElementById('autosave').checked;
       if(autos){last.forEach(x=>{if(!leads.some(l=>key(l)===key(x)))leads.push(x)});save()}
-      toast(`${last.length} negócios encontrados${autos?" e salvos":""}.`);
-    }else toast("Busca concluída. Nenhum negócio encontrado com os dados disponíveis.");
-  }catch(e){toast("Busca concluída. Tente novamente para ampliar os resultados.")}
-  finally{
-    btn.disabled=false;btn.textContent="⌕  Procurar novos negócios";
-    if(true){const b=document.getElementById("bar");if(b)b.style.width="100%"}
-  }
+      toast(`${last.length} negócios com WhatsApp encontrados${autos?' e salvos':''}.`);
+    }else{
+      // Mantém a busca funcional sem inventar WhatsApps: informa que as fontes públicas
+      // consultadas não forneceram um WhatsApp confirmado.
+      toast('Nenhum WhatsApp pôde ser confirmado nas fontes públicas consultadas.');
+      document.getElementById('results').innerHTML='<div class="empty">Nenhum WhatsApp confirmado ainda. A busca não transforma telefone comum em WhatsApp sem evidência.</div>';
+    }
+  }catch(e){toast('Busca concluída. Tente novamente para ampliar os resultados.')}
+  finally{btn.disabled=false;btn.textContent='⌕  Procurar novos negócios';const b=document.getElementById('bar');if(b)b.style.width='100%'}
 }
 
 function csvEsc(v){return`"${String(v??"").replace(/"/g,'""')}"`}
