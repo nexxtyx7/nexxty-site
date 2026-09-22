@@ -67,7 +67,7 @@ label{display:block;color:#7896a5;font-size:11px;margin:13px 0 7px}input,select{
 <section id="search" class="page">
 <div class="title"><div><div class="eyebrow">PROSPECÇÃO</div><h1>Buscar negócios</h1><p>Encontre novos estabelecimentos usando dados públicos.</p></div></div>
 <div class="searchgrid"><div class="panel"><h2>Nova pesquisa</h2><p class="muted">A busca compara os resultados com sua base e pode mostrar somente empresas novas.</p><label>Categoria</label><select id="cat"></select><label>Cidade(s)</label><input id="cities" placeholder="Ex.: Poços de Caldas; Pouso Alegre"><label>Estado / região</label><input id="region" placeholder="Ex.: MG ou Minas Gerais"><label>Máximo por cidade</label><input id="limit" type="number" min="5" max="100" value="30"><label class="check"><input id="newonly" type="checkbox" checked><span>Mostrar apenas novos resultados</span></label><label class="check"><input id="autosave" type="checkbox" checked><span>Salvar automaticamente na minha base</span></label><button class="primary full" id="searchbtn">⌕ &nbsp; Procurar novos negócios</button><div id="searchstatus"></div></div>
-<div class="panel info"><div class="symbol">✦</div><h2>Busca inteligente</h2><p>O sistema compara <b>nome + cidade</b> com seus leads para evitar resultados repetidos.</p><div class="info-row"><b>1</b>Busca negócios públicos</div><div class="info-row"><b>2</b>Remove duplicados</div><div class="info-row"><b>3</b>Filtra os já encontrados</div><div class="info-row"><b>4</b>Salva os novos</div></div></div>
+<div class="panel info"><div class="symbol">✦</div><h2>Busca inteligente</h2><p>O sistema compara <b>nome + cidade</b> com seus leads para evitar resultados repetidos.</p><div class="info-row"><b>1</b>Escolha “Todos os negócios” ou uma categoria</div><div class="info-row"><b>2</b>Busca números públicos rapidamente</div><div class="info-row"><b>3</b>Filtra duplicados</div><div class="info-row"><b>4</b>Para assim que atingir sua meta</div></div></div>
 <div id="resultbox" class="panel" style="margin-top:17px;display:none"><div class="head"><div><h2>Resultados</h2><p id="resultinfo"></p></div><button class="secondary" id="saveresults">Salvar resultados</button></div><div id="results"></div></div>
 </section>
 
@@ -162,16 +162,36 @@ function splitCities(v){return String(v||"").split(/[;\n]+/).map(x=>x.trim()).fi
 function regionName(v){let x=String(v||"").trim();return STATE_NAMES[x.toUpperCase()]||x}
 function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
 function overpassQuery(tags,b){
-  const parts=tags.map(t=>t[1]==="*"
-    ? `nwr["${t[0]}"](${b.south},${b.west},${b.north},${b.east});`
-    : `nwr["${t[0]}"="${t[1]}"](${b.south},${b.west},${b.north},${b.east});`);
-  return `[out:json][timeout:35];(${parts.join("")});out center tags;`;
+  const all = tags.length && tags[0][1]==="*";
+  const parts=all
+    ? [
+      `nwr["contact:whatsapp"](${b.south},${b.west},${b.north},${b.east});`,
+      `nwr["whatsapp"](${b.south},${b.west},${b.north},${b.east});`,
+      `nwr["contact:mobile"](${b.south},${b.west},${b.north},${b.east});`,
+      `nwr["mobile"](${b.south},${b.west},${b.north},${b.east});`,
+      `nwr["contact:phone"](${b.south},${b.west},${b.north},${b.east});`,
+      `nwr["phone"](${b.south},${b.west},${b.north},${b.east});`
+    ]
+    : tags.map(t=>t[1]==="*"
+      ? `nwr["${t[0]}"](${b.south},${b.west},${b.north},${b.east});`
+      : `nwr["${t[0]}"="${t[1]}"](${b.south},${b.west},${b.north},${b.east});`);
+  return `[out:json][timeout:20];(${parts.join("")});out center tags;`;
 }
 function overpassAroundQuery(tags,lat,lon,radius){
-  const parts=tags.map(t=>t[1]==="*"
-    ? `nwr["${t[0]}"](around:${radius},${lat},${lon});`
-    : `nwr["${t[0]}"="${t[1]}"](around:${radius},${lat},${lon});`);
-  return `[out:json][timeout:35];(${parts.join("")});out center tags;`;
+  const all = tags.length && tags[0][1]==="*";
+  const parts=all
+    ? [
+      `nwr["contact:whatsapp"](around:${radius},${lat},${lon});`,
+      `nwr["whatsapp"](around:${radius},${lat},${lon});`,
+      `nwr["contact:mobile"](around:${radius},${lat},${lon});`,
+      `nwr["mobile"](around:${radius},${lat},${lon});`,
+      `nwr["contact:phone"](around:${radius},${lat},${lon});`,
+      `nwr["phone"](around:${radius},${lat},${lon});`
+    ]
+    : tags.map(t=>t[1]==="*"
+      ? `nwr["${t[0]}"](around:${radius},${lat},${lon});`
+      : `nwr["${t[0]}"="${t[1]}"](around:${radius},${lat},${lon});`);
+  return `[out:json][timeout:20];(${parts.join("")});out center tags;`;
 }
 async function fetchJSON(url,opts={},timeout=28000){
   const c=new AbortController(),timer=setTimeout(()=>c.abort(),timeout);
@@ -215,48 +235,46 @@ const OVERPASS_URLS=[
   "https://overpass.nchc.org.tw/api/interpreter"
 ];
 async function osm(q){
-  const urls=OVERPASS_URLS.slice();
-  const jobs=urls.map(u=>fetchJSON(u,{method:"POST",body:q,headers:{"Content-Type":"text/plain;charset=UTF-8"}},22000)
-    .then(data=>{if(data&&Array.isArray(data.elements))return data;throw Error("Resposta inválida")}));
-  try{return await Promise.any(jobs)}catch(e){throw Error("Fontes de pesquisa indisponíveis")}
+  let last="";
+  for(const u of OVERPASS_URLS){
+    try{
+      const data=await fetchJSON(u,{method:"POST",body:q,headers:{"Content-Type":"text/plain;charset=UTF-8","User-Agent":"NEXXTY-ONE/1.0"}},24000);
+      if(data&&Array.isArray(data.elements))return data;
+    }catch(e){last=e?.message||"erro"; await sleep(250)}
+  }
+  throw Error(last||"Fontes indisponíveis");
 }
 async function osmBest(tags,b){
-  // Tenta a caixa da cidade e, se vier pouco, amplia por raio ao redor do centro.
   let data=await osm(overpassQuery(tags,b));
-  let total=(data.elements||[]).length;
-  if(total<8){
-    for(const radius of [15000,25000]){
-      try{
-        const extra=await osm(overpassAroundQuery(tags,b.lat,b.lon,radius));
-        const merged=new Map();
-        [...(data.elements||[]),...(extra.elements||[])].forEach(el=>merged.set(String(el.type)+":"+el.id,el));
-        data={elements:[...merged.values()]}; total=data.elements.length;
-        if(total>=8)break;
-      }catch(e){}
-    }
+  if((data.elements||[]).length<5){
+    try{
+      const extra=await osm(overpassAroundQuery(tags,b.lat,b.lon,18000));
+      const merged=new Map();
+      [...(data.elements||[]),...(extra.elements||[])].forEach(el=>merged.set(String(el.type)+":"+el.id,el));
+      data={elements:[...merged.values()]};
+    }catch(e){}
   }
   return data;
 }
-function parse(data,city){
+function matchesCategory(t,tags){
+  if(tags[0]&&tags[0][1]==="*") return true;
+  return tags.some(([k,v])=>String(t[k]||"")===String(v));
+}
+function parse(data,city,tags){
   let m=new Map();
   (data.elements||[]).forEach(el=>{
     let t=el.tags||{},name=(t.name||t.brand||t.operator||"").trim();
-    if(!name)return;
-
-    // 1) Prioriza um WhatsApp explicitamente cadastrado no OSM.
+    if(!name || !matchesCategory(t,tags))return;
     let waRaw=t["contact:whatsapp"]||t.whatsapp||"";
-
-    // 2) Se não houver a tag de WhatsApp, usa somente um celular brasileiro
-    //    público (11 dígitos). Não transforma telefone fixo em WhatsApp.
+    let explicit=!!waRaw;
     if(!waRaw){
       const mobile=t["contact:mobile"]||t.mobile||t["contact:phone"]||t.phone||t.telephone||"";
       const digits=String(mobile).replace(/\D/g,"").replace(/^55(?=\d{10,11})/,"");
       if(digits.length===11 && /^9\d{8}$/.test(digits.slice(2))) waRaw=digits;
     }
-
     const wa=whatsappNumber(waRaw);
     if(!wa)return;
-    const x={Nome:name,Cidade:city,WhatsApp:wa,Status:"Novo lead",Fonte:"OpenStreetMap",Observações:""};
+    const x={Nome:name,Cidade:city,WhatsApp:wa,Status:"Novo lead",Fonte:explicit?"WhatsApp público (OSM)":"Celular público (WhatsApp provável)",Observações:""};
     m.set(key(x),x);
   });
   return[...m.values()];
@@ -289,63 +307,61 @@ async function getAllBrazilCities(){
 
 async function runSearch(fromQuick=false){
   const cat=document.getElementById("cat").value;
+  const tags=cats[cat]||cats["Todos os negócios"];
   const rawCities=String(document.getElementById("cities").value||"").trim();
   const region=regionName(document.getElementById("region").value);
   let cities=splitCities(rawCities);
   if(!cities.length){
     cities=await getAllBrazilCities();
     if(region){
-      const rg=norm(region);
-      cities=cities.filter(c=>norm(c).endsWith(norm(region).startsWith("minas")?"mg":"" ) || norm(c).includes(rg));
-      // Estado por sigla/nome: evita depender de uma nova API.
       const sig=Object.entries(STATE_NAMES).find(([k,v])=>norm(k)===norm(region)||norm(v)===norm(region))?.[0];
-      if(sig)cities=(await getAllBrazilCities()).filter(c=>c.toUpperCase().endsWith(", "+sig));
+      if(sig)cities=cities.filter(c=>c.toUpperCase().endsWith(", "+sig));
     }
-    if(!cities.length){toast("Nenhuma cidade encontrada para essa região.");return}
   }
-  const lim=Math.max(5,Math.min(100,+document.getElementById("limit").value||30));
+  if(!cities.length){toast("Nenhuma cidade encontrada.");return}
+  const lim=Math.max(1,Math.min(100,+document.getElementById("limit").value||10));
   const only=document.getElementById("newonly").checked;
-  document.getElementById("searchstatus").innerHTML='<div class="progress"><i id="bar"></i></div><p class="muted" id="st">Preparando pesquisa...</p><div id="diag" class="muted" style="font-size:12px;margin-top:8px"></div>';
+  document.getElementById("searchstatus").innerHTML='<div class="progress"><i id="bar"></i></div><p class="muted" id="st">Iniciando...</p><div id="diag" class="muted" style="font-size:12px;margin-top:8px"></div>';
   const btn=document.getElementById("searchbtn");btn.disabled=true;btn.textContent="⌛ Procurando...";
   let found=[],done=0,errors=0,stop=false;
-  // Para pesquisa nacional, procura primeiro em cidades grandes e depois continua pela lista completa.
-  const priority=["São Paulo, SP","Rio de Janeiro, RJ","Belo Horizonte, MG","Brasília, DF","Curitiba, PR","Porto Alegre, RS","Salvador, BA","Fortaleza, CE","Recife, PE","Campinas, SP","Goiânia, GO","Manaus, AM","Belém, PA","Guarulhos, SP","São Luís, MA","Maceió, AL","Natal, RN","Florianópolis, SC","Vitória, ES","Poços de Caldas, MG"];
+  const priority=["São Paulo, SP","Rio de Janeiro, RJ","Belo Horizonte, MG","Brasília, DF","Curitiba, PR","Porto Alegre, RS","Salvador, BA","Fortaleza, CE","Recife, PE","Campinas, SP","Goiânia, GO","Manaus, AM","Belém, PA","Guarulhos, SP","São Luís, MA","Maceió, AL","Natal, RN","Florianópolis, SC","Vitória, ES","Poços de Caldas, MG","Pouso Alegre, MG","Uberlândia, MG","Ribeirão Preto, SP","Sorocaba, SP"];
   const ordered=[...new Set([...priority.filter(x=>cities.includes(x)),...cities])];
   const queue=ordered.slice();
-  const concurrency=8;
+  // Poucas requisições simultâneas é mais rápido na prática porque evita rate-limit/429 dos servidores públicos.
+  const concurrency=3;
   const worker=async()=>{
     while(!stop){
-      const city=queue.shift();
-      if(!city)return;
+      const city=queue.shift(); if(!city)return;
       try{
         const b=await locate(city);
-        const data=await osmBest(cats[cat]||cats["Todos os negócios"],b);
-        let arr=parse(data,city).filter(x=>x.WhatsApp);
-        if(only)arr=arr.filter(x=>!leads.some(l=>identityKeys(l).some(k=>identityKeys(x).includes(k))));
+        const data=await osmBest(tags,b);
+        let arr=parse(data,city,tags);
+        if(only)arr=arr.filter(x=>!leads.some(l=>sameLead(l,x)));
         found=uniqueLeads(arr,found);
         if(found.length>=lim)stop=true;
       }catch(e){errors++}
       done++;
       const checked=done+queue.length;
-      document.getElementById("bar").style.width=Math.min(100,Math.round(done/Math.max(1,checked)*100))+"%";
-      document.getElementById("st").textContent=stop?`Meta atingida: ${found.length} WhatsApps encontrados.`:`Buscando... ${found.length}/${lim} WhatsApps encontrados`;
-      document.getElementById("diag").textContent=`${done} cidade(s) verificadas • ${found.length} com WhatsApp • ${queue.length} restantes${errors?` • ${errors} consultas sem resposta`:""}`;
+      const pct=stop?100:Math.min(99,Math.round(done/Math.max(1,checked)*100));
+      document.getElementById("bar").style.width=pct+"%";
+      document.getElementById("st").textContent=found.length>=lim?`Meta atingida: ${found.length} WhatsApps.`:`Buscando... ${found.length}/${lim} WhatsApps encontrados`;
+      document.getElementById("diag").textContent=`${done} cidade(s) verificadas • ${found.length} resultado(s) válidos • ${queue.length} na fila${errors?` • ${errors} consultas falharam`:""}`;
     }
   };
   try{
     await Promise.all(Array.from({length:Math.min(concurrency,ordered.length)},worker));
     last=found.slice(0,lim);
     document.getElementById("resultbox").style.display="block";
-    document.getElementById("resultinfo").textContent=last.length?`${last.length} resultado(s) com WhatsApp encontrado(s). A busca parou ao atingir a quantidade pedida.`:"Nenhum WhatsApp público encontrado nas cidades verificadas.";
+    document.getElementById("resultinfo").textContent=last.length?`${last.length} resultado(s) encontrados. A busca parou assim que atingiu a quantidade solicitada.`:"Nenhum número público compatível encontrado nas cidades verificadas.";
     document.getElementById("results").innerHTML=table(last,false);
     document.getElementById("bar").style.width="100%";
     if(last.length){
       const autos=document.getElementById("autosave").checked;
-      if(autos){last.forEach(x=>{if(!leads.some(l=>identityKeys(l).some(k=>identityKeys(x).includes(k))))leads.push(x)});save();toast(`${last.length} resultados com WhatsApp encontrados e salvos.`)}
-      else toast(`${last.length} resultados com WhatsApp encontrados.`)
-    }else toast("Nenhum WhatsApp público encontrado.");
-  }catch(e){console.error(e);toast("A pesquisa terminou sem dados disponíveis.");document.getElementById("diag").textContent="As fontes públicas podem estar temporariamente indisponíveis. Tente novamente."}
-  finally{btn.disabled=false;btn.textContent="⌕  Procurar novos negócios"}
+      if(autos){last.forEach(x=>{if(!leads.some(l=>sameLead(l,x)))leads.push(x)});save();toast(`${last.length} resultados encontrados e salvos.`)}
+      else toast(`${last.length} resultados encontrados.`)
+    }else toast("Nenhum resultado público encontrado.");
+  }catch(e){console.error(e);toast("Não foi possível consultar as fontes agora.");document.getElementById("diag").textContent="As fontes públicas podem sofrer limite ou indisponibilidade temporária. Tente novamente."}
+  finally{btn.disabled=false;btn.textContent="⌕  Procurar negócios"}
 }
 function csvEsc(v){return`"${String(v??"").replace(/"/g,'""')}"`}
 function download(name){let cols=["Nome","Cidade","WhatsApp","Status","Fonte"];let txt="\ufeff"+[cols,...leads.map(x=>cols.map(c=>x[c]||""))].map(r=>r.map(csvEsc).join(";")).join("\n");let a=document.createElement("a");a.href=URL.createObjectURL(new Blob([txt],{type:"text/csv;charset=utf-8"}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
