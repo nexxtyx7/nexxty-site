@@ -84,7 +84,7 @@ function parseElements(data,city){
 }
 async function searchBusinesses(category,cities,limit,onlyNew){
  const all=[];let done=0;const status=document.getElementById("searchStatus");status.innerHTML=`<div class="progress"><i id="prog"></i></div><p class="muted" id="progText">Preparando pesquisa...</p>`;
- for(const city of cities){try{const b=await nominatim(city);const data=await overpass(query(categories[category],b));let a=parseElements(data,city).slice(0,limit);if(onlyNew)a=a.filter(x=>!leads.some(l=>key(l)===key(x)));all.push(...a)}catch(e){console.warn(e)}done++;document.getElementById("prog").style.width=(done/cities.length*100)+"%";document.getElementById("progText").textContent=`Pesquisadas ${done} de ${cities.length} cidade(s)...`}}
+ for(const city of cities){try{const b=await nominatim(city);const data=await overpass(query(categories[category],b));let a=parseElements(data,city);if(onlyNew)a=a.filter(x=>!leads.some(l=>key(l)===key(x)));a=a.slice(0,limit);all.push(...a)}catch(e){console.warn(e)}done++;document.getElementById("prog").style.width=(done/cities.length*100)+"%";document.getElementById("progText").textContent=`Pesquisadas ${done} de ${cities.length} cidade(s)...` }
  const m=new Map();all.forEach(x=>m.set(key(x),x));return [...m.values()]
 }
 async function runSearch(){
