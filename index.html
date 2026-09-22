@@ -246,6 +246,22 @@ async function osm(q){
 }
 async function osmBest(tags,b){
   let data=await osm(overpassQuery(tags,b));
+  // Se a consulta por categoria trouxer poucos dados, procura também
+  // estabelecimentos com dados de contato na mesma área e deixa o filtro
+  // de categoria para o parse. Isso evita 0 resultados quando o OSM usa
+  // uma etiqueta de categoria diferente da esperada.
+  if((data.elements||[]).length<5){
+    try{
+      const contactTags=[
+        ["contact:whatsapp","*"],["whatsapp","*"],["contact:mobile","*"],
+        ["mobile","*"],["contact:phone","*"],["phone","*"]
+      ];
+      const extra=await osm(overpassQuery(contactTags,b));
+      const merged=new Map();
+      [...(data.elements||[]),...(extra.elements||[])].forEach(el=>merged.set(String(el.type)+":"+el.id,el));
+      data={elements:[...merged.values()]};
+    }catch(e){}
+  }
   if((data.elements||[]).length<5){
     try{
       const extra=await osm(overpassAroundQuery(tags,b.lat,b.lon,18000));
