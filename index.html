@@ -66,7 +66,7 @@ label{display:block;color:#7896a5;font-size:11px;margin:13px 0 7px}input,select{
 
 <section id="search" class="page">
 <div class="title"><div><div class="eyebrow">PROSPECÇÃO</div><h1>Buscar negócios</h1><p>Encontre novos estabelecimentos usando dados públicos.</p></div></div>
-<div class="searchgrid"><div class="panel"><h2>Nova pesquisa</h2><p class="muted">A busca compara os resultados com sua base e pode mostrar somente empresas novas.</p><label>Categoria</label><select id="cat"></select><label>Cidade(s)</label><input id="cities" placeholder="Ex.: Poços de Caldas; Pouso Alegre"><label>Estado / região</label><input id="region" placeholder="Ex.: MG ou Minas Gerais"><label>Máximo por cidade</label><input id="limit" type="number" min="5" max="100" value="30"><label class="check"><input id="newonly" type="checkbox" checked><span>Mostrar apenas novos resultados</span></label><label class="check"><input id="autosave" type="checkbox" checked><span>Salvar automaticamente na minha base</span></label><button class="primary full" id="searchbtn">⌕ &nbsp; Procurar novos negócios</button><div id="searchstatus"></div></div>
+<div class="searchgrid"><div class="panel"><h2>Nova pesquisa</h2><p class="muted">A busca compara os resultados com sua base e pode mostrar somente empresas novas.</p><label>Categoria</label><select id="cat"></select><label>Cidade(s)</label><input id="cities" placeholder="Ex.: Poços de Caldas; Pouso Alegre"><label>Estado / região</label><input id="region" placeholder="Ex.: MG ou Minas Gerais"><label>Máximo por cidade</label><input id="limit" type="number" min="5" max="100" value="30"><label class="check"><input id="newonly" type="checkbox" checked><span>Mostrar apenas novos resultados</span></label><label class="check"><input id="autosave" type="checkbox" checked><span>Salvar automaticamente na minha base</span></label><button class="primary full" id="searchbtn">⌕ &nbsp; Procurar novos negócios</button><button class="secondary full" id="stopsearch" style="display:none;margin-top:8px">■ &nbsp; Cancelar pesquisa</button><div id="searchstatus"></div></div>
 <div class="panel info"><div class="symbol">✦</div><h2>Busca inteligente</h2><p>O sistema compara <b>nome + cidade</b> com seus leads para evitar resultados repetidos.</p><div class="info-row"><b>1</b>Escolha “Todos os negócios” ou uma categoria</div><div class="info-row"><b>2</b>Busca números públicos rapidamente</div><div class="info-row"><b>3</b>Filtra duplicados</div><div class="info-row"><b>4</b>Para assim que atingir sua meta</div></div></div>
 <div id="resultbox" class="panel" style="margin-top:17px;display:none"><div class="head"><div><h2>Resultados</h2><p id="resultinfo"></p></div><button class="secondary" id="saveresults">Salvar resultados</button></div><div id="results"></div></div>
 </section>
@@ -195,11 +195,16 @@ function overpassAroundQuery(tags,lat,lon,radius){
 }
 async function fetchJSON(url,opts={},timeout=28000){
   const c=new AbortController(),timer=setTimeout(()=>c.abort(),timeout);
+  let relay;
   try{
+    if(SEARCH_ABORT){
+      if(SEARCH_ABORT.signal.aborted)c.abort();
+      else { relay=()=>c.abort(); SEARCH_ABORT.signal.addEventListener("abort",relay,{once:true}); }
+    }
     const r=await fetch(url,{...opts,signal:c.signal,headers:{Accept:"application/json",...(opts.headers||{})}});
     if(!r.ok)throw Error(`HTTP ${r.status}`);
     return await r.json();
-  }finally{clearTimeout(timer)}
+  }finally{clearTimeout(timer);if(relay&&SEARCH_ABORT)SEARCH_ABORT.signal.removeEventListener("abort",relay)}
 }
 async function locate(city){
   const queries=[
@@ -321,11 +326,15 @@ async function getAllBrazilCities(){
   }
 }
 
+let SEARCH_ABORT=null;
+let SEARCH_STOPPED=false;
+
 async function runSearch(fromQuick=false){
   const cat=document.getElementById("cat").value;
   const tags=cats[cat]||cats["Todos os negócios"];
   const rawCities=String(document.getElementById("cities").value||"").trim();
   const region=regionName(document.getElementById("region").value);
+  const national=!rawCities.length;
   let cities=splitCities(rawCities);
   if(!cities.length){
     cities=await getAllBrazilCities();
@@ -338,13 +347,34 @@ async function runSearch(fromQuick=false){
   const lim=Math.max(1,Math.min(100,+document.getElementById("limit").value||10));
   const only=document.getElementById("newonly").checked;
   document.getElementById("searchstatus").innerHTML='<div class="progress"><i id="bar"></i></div><p class="muted" id="st">Iniciando...</p><div id="diag" class="muted" style="font-size:12px;margin-top:8px"></div>';
-  const btn=document.getElementById("searchbtn");btn.disabled=true;btn.textContent="⌛ Procurando...";
+  const btn=document.getElementById("searchbtn");
+  const stopBtn=document.getElementById("stopsearch");
+  SEARCH_ABORT=new AbortController();
+  SEARCH_STOPPED=false;
+  btn.disabled=true;btn.textContent="⌛ Procurando...";
+  if(stopBtn){stopBtn.style.display="block";stopBtn.disabled=false;}
   let found=[],done=0,errors=0,stop=false;
-  const priority=["São Paulo, SP","Rio de Janeiro, RJ","Belo Horizonte, MG","Brasília, DF","Curitiba, PR","Porto Alegre, RS","Salvador, BA","Fortaleza, CE","Recife, PE","Campinas, SP","Goiânia, GO","Manaus, AM","Belém, PA","Guarulhos, SP","São Luís, MA","Maceió, AL","Natal, RN","Florianópolis, SC","Vitória, ES","Poços de Caldas, MG","Pouso Alegre, MG","Uberlândia, MG","Ribeirão Preto, SP","Sorocaba, SP"];
-  const ordered=[...new Set([...priority.filter(x=>cities.includes(x)),...cities])];
+  // No modo Nacional, distribui a busca por várias cidades em vez de começar sempre pelas mesmas.
+  let ordered=[...new Set(cities)];
+  if(national){
+    ordered=ordered.sort(()=>Math.random()-0.5);
+    document.getElementById("st").textContent=`Modo nacional: pesquisando várias cidades...`;
+  }
   const queue=ordered.slice();
   // Poucas requisições simultâneas é mais rápido na prática porque evita rate-limit/429 dos servidores públicos.
   const concurrency=3;
+  if(stopBtn){
+    stopBtn.onclick=()=>{
+      if(stop)return;
+      SEARCH_STOPPED=true;
+      stop=true;
+      queue.length=0;
+      if(SEARCH_ABORT)SEARCH_ABORT.abort();
+      stopBtn.disabled=true;
+      document.getElementById("st").textContent="Pesquisa cancelada.";
+      document.getElementById("diag").textContent=`${done} cidade(s) verificadas • ${found.length} resultado(s) encontrados.`;
+    };
+  }
   const worker=async()=>{
     while(!stop){
       const city=queue.shift(); if(!city)return;
@@ -353,6 +383,11 @@ async function runSearch(fromQuick=false){
         const data=await osmBest(tags,b);
         let arr=parse(data,city,tags);
         if(only)arr=arr.filter(x=>!leads.some(l=>sameLead(l,x)));
+        // No Nacional, limita a contribuição de cada cidade para obrigar a busca a avançar.
+        if(national){
+          const quota=Math.max(1,Math.ceil(lim/Math.min(concurrency,4)));
+          arr=arr.slice(0,quota);
+        }
         found=uniqueLeads(arr,found).slice(0,lim);
         if(found.length>=lim){
           // Entrega imediatamente somente a quantidade pedida.
@@ -391,8 +426,14 @@ async function runSearch(fromQuick=false){
       if(autos){last.forEach(x=>{if(!leads.some(l=>sameLead(l,x)))leads.push(x)});save();toast(`${last.length} resultados encontrados e salvos.`)}
       else toast(`${last.length} resultados encontrados.`)
     }else toast("Nenhum resultado público encontrado.");
-  }catch(e){console.error(e); if(!last.length && !found.length){toast("Não foi possível consultar as fontes agora.");document.getElementById("diag").textContent="As fontes públicas podem sofrer limite ou indisponibilidade temporária. Tente novamente."}}
-  finally{btn.disabled=false;btn.textContent="⌕  Procurar negócios"}
+  }catch(e){
+    console.error(e);
+    if(!SEARCH_STOPPED && !last.length && !found.length){toast("Não foi possível consultar as fontes agora.");document.getElementById("diag").textContent="As fontes públicas podem sofrer limite ou indisponibilidade temporária. Tente novamente."}
+  }finally{
+    btn.disabled=false;btn.textContent="⌕  Procurar novos negócios";
+    if(stopBtn){stopBtn.style.display="none";stopBtn.disabled=false;}
+    SEARCH_ABORT=null;
+  }
 }
 function csvEsc(v){return`"${String(v??"").replace(/"/g,'""')}"`}
 function download(name){let cols=["Nome","Cidade","WhatsApp","Status","Fonte"];let txt="\ufeff"+[cols,...leads.map(x=>cols.map(c=>x[c]||""))].map(r=>r.map(csvEsc).join(";")).join("\n");let a=document.createElement("a");a.href=URL.createObjectURL(new Blob([txt],{type:"text/csv;charset=utf-8"}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
