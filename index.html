@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#061321">
+  <title>NEXXTY ONE • Lead Intelligence</title>
+  <meta name="description" content="NEXXTY ONE — prospecção profissional de negócios.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="toast"></div>
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">✦</div>
+      <div><strong>NEXXTY <span>ONE</span></strong><small>LEADS • NEGÓCIOS • RESULTADOS</small></div>
+    </div>
+
+    <nav>
+      <button class="nav-item active" data-page="dashboard"><i>⌂</i> Dashboard</button>
+      <button class="nav-item" data-page="search"><i>⌕</i> Buscar negócios</button>
+      <button class="nav-item" data-page="leads"><i>♙</i> Meus leads</button>
+      <button class="nav-item" data-page="import"><i>⇧</i> Importar dados</button>
+      <button class="nav-item" data-page="export"><i>⇩</i> Exportar dados</button>
+      <button class="nav-item" data-page="settings"><i>⚙</i> Configurações</button>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="side-promo">
+        <div class="rocket">↗</div>
+        <h3>Mais negócios,<br>mais oportunidades.</h3>
+        <p>NEXXTY ONE transforma pesquisa em prospecção organizada.</p>
+      </div>
+      <div class="version">NEXXTY ONE <b>v2.0</b> • GitHub Pages</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="mobile-brand">NEXXTY <span>ONE</span></div>
+      <div class="global-search">
+        <span>⌕</span><input id="globalSearch" placeholder="Pesquise por nome, cidade, telefone..." autocomplete="off">
+      </div>
+      <div class="top-actions"><button id="clearSearch" title="Limpar busca">×</button><div class="status-dot"></div><span class="avatar">N</span></div>
+    </header>
+
+    <section id="dashboard" class="page active">
+      <div class="hero">
+        <div>
+          <div class="eyebrow">LEAD INTELLIGENCE</div>
+          <h1>Bem-vindo ao <span>NEXXTY ONE</span></h1>
+          <p>Encontre negócios, organize seus leads e transforme oportunidades em clientes.</p>
+        </div>
+        <button class="primary big" data-go="search">⌕ &nbsp; Procurar novos negócios</button>
+      </div>
+
+      <div class="metrics">
+        <div class="metric"><div class="metric-icon cyan">♙</div><span>Total de leads</span><strong id="mTotal">0</strong><small>base local</small></div>
+        <div class="metric"><div class="metric-icon green">+</div><span>Novos leads</span><strong id="mNew">0</strong><small>aguardando contato</small></div>
+        <div class="metric"><div class="metric-icon blue">◌</div><span>Respostas</span><strong id="mReply">0</strong><small>em acompanhamento</small></div>
+        <div class="metric"><div class="metric-icon gold">♛</div><span>Clientes</span><strong id="mClients">0</strong><small>convertidos</small></div>
+        <div class="metric"><div class="metric-icon purple">↗</div><span>Com site</span><strong id="mSites">0</strong><small>presença digital</small></div>
+      </div>
+
+      <div class="content-grid">
+        <div class="panel leads-panel">
+          <div class="panel-head"><div><h2>Últimos leads</h2><p>Seus negócios mais recentes.</p></div><button class="link-btn" data-go="leads">Ver todos →</button></div>
+          <div id="recentTable"></div>
+        </div>
+        <div class="right-stack">
+          <div class="panel quick-search">
+            <div class="panel-head"><div><h2>⌕ &nbsp;Buscar novos negócios</h2><p>Pesquise empresas por categoria e cidade.</p></div></div>
+            <label>Categoria</label><select id="quickCategory"></select>
+            <label>Cidade(s)</label><input id="quickCity" placeholder="Ex.: Poços de Caldas, Pouso Alegre">
+            <label>Quantidade por cidade</label><input id="quickLimit" type="number" min="5" max="100" value="20">
+            <button class="primary full" id="quickSearchBtn">⌕ &nbsp; Iniciar busca</button>
+            <div class="new-only"><input id="onlyNew" type="checkbox" checked><label for="onlyNew">Somente resultados ainda não encontrados</label></div>
+          </div>
+          <div class="panel">
+            <h2>⚡ Ações rápidas</h2>
+            <div class="action-list">
+              <button data-go="import">⇧ &nbsp; Importar CSV</button>
+              <button id="exportQuick">⇩ &nbsp; Exportar CSV</button>
+              <button id="backupQuick">▣ &nbsp; Fazer backup</button>
+            </div>
+          </div>
+          <div class="system-card"><span class="online"></span><div><b>Sistema online</b><small>Dados salvos neste navegador</small></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="search" class="page">
+      <div class="page-title"><div><div class="eyebrow">PROSPECÇÃO</div><h1>Buscar negócios</h1><p>Encontre novos estabelecimentos usando dados públicos do OpenStreetMap.</p></div></div>
+      <div class="search-layout">
+        <div class="panel search-box">
+          <h2>Nova pesquisa</h2>
+          <p class="muted">O NEXXTY ONE compara os resultados com sua base local e pode mostrar somente empresas que você ainda não encontrou.</p>
+          <label>Categoria</label><select id="category"></select>
+          <label>Cidade(s)</label><input id="cities" placeholder="Ex.: Poços de Caldas, Pouso Alegre">
+          <label>Máximo de resultados por cidade</label><input id="limit" type="number" min="5" max="100" value="30">
+          <div class="search-options"><label class="check"><input id="newOnly" type="checkbox" checked> <span>Mostrar apenas novos resultados</span></label><label class="check"><input id="autoSave" type="checkbox" checked> <span>Salvar automaticamente na minha base</span></label></div>
+          <button class="primary full" id="searchBtn">⌕ &nbsp; Procurar novos negócios</button>
+          <div id="searchStatus"></div>
+        </div>
+        <div class="panel info-panel">
+          <div class="big-icon">✦</div><h2>Busca inteligente</h2>
+          <p>Ao pesquisar novamente a mesma categoria e cidade, o sistema compara o nome + cidade com os leads já salvos.</p>
+          <div class="info-row"><b>1</b><span>Busca negócios públicos</span></div>
+          <div class="info-row"><b>2</b><span>Remove duplicados</span></div>
+          <div class="info-row"><b>3</b><span>Destaca apenas os novos</span></div>
+          <div class="info-row"><b>4</b><span>Salva na sua base local</span></div>
+        </div>
+      </div>
+      <div class="panel results-panel" id="resultsPanel" hidden><div class="panel-head"><div><h2>Resultados da pesquisa</h2><p id="resultsInfo"></p></div><button class="secondary" id="saveResults">Salvar resultados</button></div><div id="resultsTable"></div></div>
+    </section>
+
+    <section id="leads" class="page">
+      <div class="page-title"><div><div class="eyebrow">CRM</div><h1>Meus leads</h1><p>Gerencie sua base de prospecção.</p></div><button class="primary" data-go="search">+ Procurar novos</button></div>
+      <div class="toolbar"><input id="leadSearch" placeholder="⌕ Pesquisar lead..."><select id="statusFilter"><option>Todos</option><option>Novo lead</option><option>Contato feito</option><option>Respondeu</option><option>Cliente</option><option>Sem interesse</option></select></div>
+      <div class="panel"><div id="allTable"></div></div>
+    </section>
+
+    <section id="import" class="page">
+      <div class="page-title"><div><div class="eyebrow">DADOS</div><h1>Importar dados</h1><p>Adicione uma planilha CSV à sua base.</p></div></div>
+      <div class="panel import-box"><div class="upload-icon">⇧</div><h2>Importar CSV</h2><p>Escolha um arquivo CSV com colunas como Nome, Cidade, Telefone, WhatsApp, Instagram e Site.</p><input id="csvFile" type="file" accept=".csv,text/csv"><button class="primary" id="importBtn">Importar arquivo</button><div id="importStatus"></div></div>
+    </section>
+
+    <section id="export" class="page">
+      <div class="page-title"><div><div class="eyebrow">DADOS</div><h1>Exportar dados</h1><p>Baixe sua base para continuar trabalhando onde quiser.</p></div></div>
+      <div class="export-cards"><div class="panel export-card"><div class="big-icon">⇩</div><h2>CSV completo</h2><p>Todos os leads, contatos, status e links.</p><button class="primary" id="exportBtn">Baixar CSV</button></div><div class="panel export-card"><div class="big-icon">▣</div><h2>Backup</h2><p>Faça uma cópia da sua base atual.</p><button class="secondary" id="backupBtn">Baixar backup</button></div></div>
+    </section>
+
+    <section id="settings" class="page">
+      <div class="page-title"><div><div class="eyebrow">SISTEMA</div><h1>Configurações</h1><p>Controle sua base local.</p></div></div>
+      <div class="panel settings-box"><h2>Armazenamento</h2><p>Os leads ficam salvos no armazenamento local deste navegador. Eles não são enviados para um servidor pelo GitHub Pages.</p><div class="setting-row"><span>Leads armazenados</span><b id="settingsCount">0</b></div><button class="danger" id="clearData">Apagar todos os leads deste navegador</button></div>
+      <div class="panel settings-box"><h2>Sobre</h2><p>NEXXTY ONE v2.0 • GitHub Pages • Pesquisa com dados públicos do OpenStreetMap.</p></div>
+    </section>
+  </main>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
