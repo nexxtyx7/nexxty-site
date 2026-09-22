@@ -338,7 +338,22 @@ async function runSearch(fromQuick=false){
         let arr=parse(data,city,tags);
         if(only)arr=arr.filter(x=>!leads.some(l=>sameLead(l,x)));
         found=uniqueLeads(arr,found);
-        if(found.length>=lim)stop=true;
+        if(found.length>=lim){
+          // Entrega imediatamente somente a quantidade pedida.
+          found=found.slice(0,lim);
+          last=found.slice();
+          stop=true;
+          document.getElementById("resultbox").style.display="block";
+          document.getElementById("resultinfo").textContent=`${last.length} resultado(s) encontrado(s).`;
+          document.getElementById("results").innerHTML=table(last,false);
+          document.getElementById("bar").style.width="100%";
+          document.getElementById("st").textContent=`Meta atingida: ${last.length}/${lim}.`;
+          document.getElementById("diag").textContent=`Resultado entregue assim que a quantidade solicitada foi encontrada.`;
+          const autos=document.getElementById("autosave").checked;
+          if(autos){last.forEach(x=>{if(!leads.some(l=>sameLead(l,x)))leads.push(x)});save();}
+          toast(`${last.length} resultado(s) encontrado(s).`);
+          return;
+        }
       }catch(e){errors++}
       done++;
       const checked=done+queue.length;
