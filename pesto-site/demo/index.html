@@ -24,13 +24,13 @@ body.locked{user-select:none;-webkit-user-select:none}
 <div id="demo"><iframe id="site" title="Demonstração do site Pesto Cozinha Bar" src="about:blank"></iframe><div class="watermark">DEMONSTRAÇÃO • PESTO</div></div>
 <script>
 (function(){
-const PASSWORD='PestoCliente26!';
+const AUDIT_API='https://pesto-demo-audit.onrender.com/api/login';
 const gate=document.getElementById('gate'), demo=document.getElementById('demo'), form=document.getElementById('login'), field=document.getElementById('password'), error=document.getElementById('error'), frame=document.getElementById('site');
 function block(e){e.preventDefault();return false}
 document.addEventListener('contextmenu',block);
 document.addEventListener('copy',block);document.addEventListener('cut',block);
 document.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&['c','x','u','s','p','a'].includes(e.key.toLowerCase()))block(e);});
-form.addEventListener('submit',function(e){e.preventDefault();if(field.value!==PASSWORD){error.textContent='Senha incorreta. Confira a senha recebida.';field.select();return;}gate.style.display='none';demo.style.display='block';document.body.classList.remove('locked');frame.src='../';});
+form.addEventListener('submit',async function(e){e.preventDefault();error.textContent='Verificando…';const submit=form.querySelector('button');submit.disabled=true;try{const response=await fetch(AUDIT_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:field.value})});if(!response.ok)throw new Error('Senha incorreta');const result=await response.json();if(!result.ok)throw new Error('Senha incorreta');gate.style.display='none';demo.style.display='block';document.body.classList.remove('locked');frame.src='../';}catch(err){error.textContent=err.message==='Senha incorreta'?'Senha incorreta. Confira a senha recebida.':'Não foi possível verificar agora. Tente novamente.';field.select();}finally{submit.disabled=false;}});
 frame.addEventListener('load',function(){try{const d=frame.contentDocument;if(!d)return;d.addEventListener('contextmenu',block);d.addEventListener('copy',block);d.addEventListener('cut',block);d.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&['c','x','u','s','p','a'].includes(e.key.toLowerCase()))block(e);});const style=d.createElement('style');style.textContent='*{-webkit-user-select:none!important;user-select:none!important}';d.head.appendChild(style);}catch(e){}});
 })();
 </script>
