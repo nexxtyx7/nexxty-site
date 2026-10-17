@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#11130e">
+<title>Demonstração privada | Pesto Cozinha Bar</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#11130e;color:#f7f4eb;font-family:Arial,sans-serif;min-height:100vh}
+#gate{min-height:100vh;display:grid;place-items:center;padding:24px}.panel{width:min(420px,100%);padding:32px;border:1px solid #4d513d;border-radius:18px;background:#1a1d15;box-shadow:0 18px 60px #0006}
+h1{font-size:25px;margin:0 0 8px}p{color:#c5c6b9;line-height:1.5}.tag{color:#b5c78b;text-transform:uppercase;letter-spacing:2px;font-size:11px;margin-bottom:14px}
+label{display:block;margin:22px 0 8px;font-size:13px}input{width:100%;padding:14px;border-radius:8px;border:1px solid #62674d;background:#10120d;color:white;font-size:16px;outline:none}button{margin-top:14px;width:100%;padding:14px;border:0;border-radius:8px;background:#c4d49b;color:#17190f;font-size:15px;font-weight:700;cursor:pointer}#error{color:#ffb6a8;min-height:20px;font-size:13px}small{display:block;margin-top:20px;color:#8f9283;line-height:1.4}
+#demo{display:none;position:fixed;inset:0;background:#11130e}iframe{width:100%;height:100%;border:0}.watermark{position:fixed;inset:0;pointer-events:none;display:grid;place-items:center;overflow:hidden;opacity:.13;color:white;font-size:clamp(22px,5vw,60px);font-weight:800;letter-spacing:5px;transform:none;text-align:center;text-shadow:0 1px 3px #000;z-index:5}
+body.locked{user-select:none;-webkit-user-select:none}
+</style>
+</head>
+<body class="locked">
+<main id="gate"><section class="panel">
+<div class="tag">Acesso para cliente</div><h1>Pesto Cozinha Bar</h1>
+<p>Esta é uma demonstração privada do site. Digite a senha que recebeu para visualizar.</p>
+<form id="login"><label for="password">Senha de acesso</label><input id="password" type="password" autocomplete="current-password" required autofocus><button type="submit">Acessar demonstração</button><div id="error" role="status"></div></form>
+<small>Material de apresentação. O conteúdo do site pode ser visualizado durante o acesso; esta tela não substitui uma proteção de segurança no servidor.</small>
+</section></main>
+<div id="demo"><iframe id="site" title="Demonstração do site Pesto Cozinha Bar" src="about:blank"></iframe><div class="watermark">DEMONSTRAÇÃO • PESTO</div></div>
+<script>
+(function(){
+const PASSWORD='PestoCliente26!';
+const gate=document.getElementById('gate'), demo=document.getElementById('demo'), form=document.getElementById('login'), field=document.getElementById('password'), error=document.getElementById('error'), frame=document.getElementById('site');
+function block(e){e.preventDefault();return false}
+document.addEventListener('contextmenu',block);
+document.addEventListener('copy',block);document.addEventListener('cut',block);
+document.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&['c','x','u','s','p','a'].includes(e.key.toLowerCase()))block(e);});
+form.addEventListener('submit',function(e){e.preventDefault();if(field.value!==PASSWORD){error.textContent='Senha incorreta. Confira a senha recebida.';field.select();return;}gate.style.display='none';demo.style.display='block';document.body.classList.remove('locked');frame.src='../';});
+frame.addEventListener('load',function(){try{const d=frame.contentDocument;if(!d)return;d.addEventListener('contextmenu',block);d.addEventListener('copy',block);d.addEventListener('cut',block);d.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&['c','x','u','s','p','a'].includes(e.key.toLowerCase()))block(e);});const style=d.createElement('style');style.textContent='*{-webkit-user-select:none!important;user-select:none!important}';d.head.appendChild(style);}catch(e){}});
+})();
+</script>
+</body></html>
